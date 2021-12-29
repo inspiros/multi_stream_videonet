@@ -61,7 +61,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-    torch.manual_seed(args.seed)
+    if args.seed is not None:
+        torch.manual_seed(args.seed)
 
     os.makedirs(args.output_dir, exist_ok=True)
     checkpoint_file = os.path.join(args.output_dir, 'checkpoint.pt')
