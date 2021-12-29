@@ -1,6 +1,6 @@
 ### Code đề tài AFOSR2022
 
-#### Dataset AFOSR
+#### Dataset AFOSR:
 
 - Dataset class: `datasets.afosr.AFOSRVideoDataset`
 - Video Sampler classes: (_tất cả nằm trong file `datasets.utils.video_sampler`_)
@@ -14,7 +14,7 @@
       đầu tiên (cách **Minh** đang sử dụng).
     - `LambdaSampler`: tự quy định cách lấy mẫu - advanced.
 
-#### Code mẫu:
+Code mẫu:
 ```python
 import albumentations as A
 
@@ -42,3 +42,11 @@ print(f'Number of train instances: {len(train_set)}')
 ```
 
 Ngoài ra xem và chạy file `check_afosr_dataset.py`.
+
+#### Model:
+
+Một số model Conv3D có sẵn trong package `models.videos`.
+
+#### Note:
+
+_Anh Hiếu or anh Quân gánh xem nào_

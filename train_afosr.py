@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument('--train_batch_size', type=int, default=None)
     parser.add_argument('--test_batch_size', type=int, default=None)
     parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--device', default='cuda')
+    parser.add_argument('--device', default='cuda:0')
     parser.add_argument('--seed', type=int, default=None)
 
     parser.add_argument('--val_frequency', type=int, default=1,
