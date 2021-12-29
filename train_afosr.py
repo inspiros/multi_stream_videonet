@@ -9,7 +9,7 @@ from sklearn.metrics import (
 )
 from torch.utils.data import DataLoader
 
-from datasets.ipn import *
+from datasets.afosr import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
 from models import r2plus1d_18
@@ -73,8 +73,8 @@ def main():
             std = mean_std_dict['std']
             del mean_std_dict
         else:
-            train_set = IPNFramesDataset(
-                frames_dir=args.frames_dir,
+            train_set = AFOSRVideoDataset(
+                video_dir=args.video_dir,
                 annotation_file_path=args.train_annotation_file,
                 sampler=FullSampler(),
                 transform=A.ToFloat(),
@@ -95,15 +95,15 @@ def main():
                     always_apply=True),
     ])
 
-    train_set = IPNFramesDataset(
-        frames_dir=args.frames_dir,
+    train_set = AFOSRVideoDataset(
+        video_dir=args.video_dir,
         annotation_file_path=args.train_annotation_file,
         sampler=OnceRandomTemporalSegmentSampler(n_frames=16),
         transform=transform,
         use_albumentations=True,
     )
-    test_set = IPNFramesDataset(
-        frames_dir=args.frames_dir,
+    test_set = AFOSRVideoDataset(
+        video_dir=args.video_dir,
         annotation_file_path=args.test_annotation_file,
         sampler=SystematicSampler(n_frames=16),
         transform=transform,
