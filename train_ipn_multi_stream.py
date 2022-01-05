@@ -37,6 +37,11 @@ def parse_args():
     parser.add_argument('--output_dir', default='outputs/IPN_RGB_OF',
                         help='path to output folder.')
 
+    parser.add_argument('--crop_size', type=int, default=112,
+                        help='center crop size.')
+    parser.add_argument('--temporal_slice', type=int, default=16,
+                        help='temporal length of each sample.')
+
     parser.add_argument('--max_epoch', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=8)
     parser.add_argument('--train_batch_size', type=int, default=None)
@@ -112,7 +117,7 @@ def main():
         subsets=[IPNFramesDataset(
             frames_dir=frames_dir,
             annotation_file_path=args.train_annotation_file,
-            sampler=OnceRandomTemporalSegmentSampler(n_frames=16),
+            sampler=OnceRandomTemporalSegmentSampler(n_frames=args.temporal_slice),
             transform=transform,
             use_albumentations=True,
         ) for frames_dir in args.frames_dirs],
@@ -122,7 +127,7 @@ def main():
         subsets=[IPNFramesDataset(
             frames_dir=frames_dir,
             annotation_file_path=args.test_annotation_file,
-            sampler=SystematicSampler(n_frames=16),
+            sampler=SystematicSampler(n_frames=args.temporal_slice),
             transform=transform,
             use_albumentations=True,
         ) for frames_dir in args.frames_dirs],

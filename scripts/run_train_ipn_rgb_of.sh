@@ -5,8 +5,9 @@ python3 train_ipn_multi_stream.py \
   --test_annotation_file /mnt/disk3/datasets/IPN/annotations/Annot_TestList.csv \
   --class_index_file /mnt/disk3/datasets/IPN/annotations/classIdx.csv \
   --output_dir outputs/IPN/RGB_OF \
+  --temporal_slice 32 \
   --max_epoch 30 \
-  --batch_size 8 \
+  --batch_size 4 \
   --lr 1e-3 \
   --device cuda:1
 #  --mean_std_file outputs/IPN/RGB_OF_mean_std.pt \
