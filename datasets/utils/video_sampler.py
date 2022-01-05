@@ -1,5 +1,7 @@
+from typing import List, Generator, Union
 from abc import ABC
 from collections.abc import Sequence
+import types
 
 import cv2
 import numpy as np
@@ -12,6 +14,7 @@ __all__ = [
     'RandomTemporalSegmentSampler',
     'OnceRandomTemporalSegmentSampler',
     'LambdaSampler',
+    'synchronize_state',
 ]
 
 
@@ -108,6 +111,7 @@ class _BaseSampler(ABC):
         if not n_frames:
             raise ValueError(f'n_frames must be positive number, got {n_frames}.')
         self.n_frames = n_frames
+        self._presampling_hooks = []
 
     def __call__(self, source, start_frame=None, end_frame=None, sample_id=None):
         cap = _MediaCapture(source)
@@ -119,11 +123,20 @@ class _BaseSampler(ABC):
             end_frame = cap.frame_count - 1
         elif end_frame > cap.frame_count - 1:
             end_frame = cap.frame_count - 1
+
+        for hook in self._presampling_hooks:
+            hook(source, start_frame, end_frame, sample_id)
         sampled_frame_ids = self._get_sampled_frame_ids(source, start_frame, end_frame, sample_id)
         return cap.sample(sampled_frame_ids)
 
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id):
         raise NotImplementedError
+
+    def register_presampling_hook(self, hook):
+        self._presampling_hooks.append(hook)
+
+    def clear_presampling_hooks(self):
+        self._presampling_hooks.clear()
 
 
 class _BaseMemorizedSampler(_BaseSampler, ABC):
@@ -142,6 +155,7 @@ class _BaseMemorizedSampler(_BaseSampler, ABC):
 
 class FullSampler(_BaseSampler):
     """Sample all frames"""
+
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         return list(range(start_frame, end_frame))
 
@@ -192,3 +206,24 @@ class LambdaSampler(_BaseSampler):
 
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         return self.get_sampled_frame_ids_func(source, start_frame, end_frame)
+
+
+class synchronize_state:
+    def __init__(self, samplers: Union[List[_BaseSampler], Generator]):
+        if isinstance(samplers, types.GeneratorType):
+            samplers = list(samplers)
+        self.samplers = samplers
+        self._random_state = None
+
+    def __enter__(self):
+        self._random_state = np.random.get_state()
+        for sampler in self.samplers:
+            sampler.register_presampling_hook(self._reuse_numpy_state)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for sampler in self.samplers:
+            sampler.clear_presampling_hooks()
+        self._random_state = None
+
+    def _reuse_numpy_state(self, *args, **kwargs):
+        np.random.set_state(self._random_state)

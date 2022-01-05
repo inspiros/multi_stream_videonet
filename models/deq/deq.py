@@ -201,7 +201,7 @@ class DEQBlock(nn.Module):
                                  **self.solver_kwargs)
             return result[0]
 
-        self.hook = new_z_star.register_hook(backward_hook)
+        self.hook = new_z_star.register_presampling_hook(backward_hook)
         return unpack_fn(new_z_star)
 
     def _safe_backward_hook_impl(self, x):
@@ -230,7 +230,7 @@ class DEQBlock(nn.Module):
                                  **self.solver_kwargs)
             return result[0]
 
-        self.hook = z_star.register_hook(backward_hook)
+        self.hook = z_star.register_presampling_hook(backward_hook)
         return unpack_fn(z_star)
 
     def _original_impl(self, x):
@@ -258,7 +258,7 @@ class DEQBlock(nn.Module):
                                  **self.solver_kwargs)
             return result[0]
 
-        z_star.register_hook(backward_hook)
+        z_star.register_presampling_hook(backward_hook)
         return z_star
 
     def _autograd_impl(self, x):
