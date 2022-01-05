@@ -21,7 +21,8 @@ class C3D(nn.Module):
 
     def __init__(self,
                  num_classes=487,
-                 dropout=0.25):
+                 temporal_slice=16,
+                 dropout=0.1):
         super(C3D, self).__init__()
 
         self.conv1 = nn.Conv3d(3, 64, kernel_size=(3, 3, 3), padding=(1, 1, 1))
@@ -42,7 +43,7 @@ class C3D(nn.Module):
         self.conv5b = nn.Conv3d(512, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.pool5 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=(0, 1, 1))
 
-        self.fc6 = nn.Linear(8192, 4096)
+        self.fc6 = nn.Linear(8192 * temporal_slice / 16, 4096)
         self.fc7 = nn.Linear(4096, 4096)
         self.fc8 = nn.Linear(4096, num_classes)
 
@@ -52,7 +53,6 @@ class C3D(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        x = x.permute(0, 2, 1, 3, 4)  # (b, c, s, w, h)
         x = self.relu(self.conv1(x))
         x = self.pool1(x)
 
@@ -72,10 +72,10 @@ class C3D(nn.Module):
         x = self.pool5(x)
 
         x = x.flatten(1)
-        x_feat = self.relu(self.fc6(x))
-        x = self.relu(self.fc7(x_feat))
+        x = self.relu(self.fc6(x))
+        x = self.relu(self.fc7(x))
         x = self.fc8(x)
-        return x, x_feat
+        return x
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -105,7 +105,8 @@ class C3DBatchNorm(nn.Module):
 
     def __init__(self,
                  num_classes=400,
-                 dropout=0.25):
+                 temporal_slice=16,
+                 dropout=0.1):
         super(C3DBatchNorm, self).__init__()
 
         self.conv1a = nn.Conv3d(3, 64, kernel_size=(3, 3, 3), padding=(1, 1, 1))
@@ -134,7 +135,7 @@ class C3DBatchNorm(nn.Module):
         self.conv5b_bn = nn.BatchNorm3d(512, eps=1e-3, momentum=0.9)
         self.pool5 = nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2))
 
-        self.fc6 = nn.Linear(4608, 4096)
+        self.fc6 = nn.Linear(4608 * temporal_slice // 16, 4096)
         self.fc7 = nn.Linear(4096, 4096)
         self.fc8 = nn.Linear(4096, num_classes)
 
@@ -144,7 +145,6 @@ class C3DBatchNorm(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        x = x.permute(0, 2, 1, 3, 4)  # (b, c, s, w, h)
         x = self.relu(self.conv1a_bn(self.conv1a(x)))
         x = self.pool1(x)
 
@@ -164,10 +164,10 @@ class C3DBatchNorm(nn.Module):
         x = self.pool5(x)
 
         x = x.flatten(1)
-        x_feat = self.relu(self.fc6(x))
-        x = self.relu(self.fc7(x_feat))
+        x = self.relu(self.fc6(x))
+        x = self.relu(self.fc7(x))
         x = self.fc8(x)
-        return x, x_feat
+        return x
 
     def _initialize_weights(self):
         for m in self.modules():

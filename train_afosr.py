@@ -13,6 +13,7 @@ from datasets.afosr import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
 from models import r2plus1d_18
+from models.videos.c3d import c3d_bn
 from utils.plot_utils import *
 from utils.trainer_utils import ClassificationTrainer
 
@@ -122,9 +123,11 @@ def main():
     train_loader = DataLoader(train_set, batch_size=args.train_batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=args.test_batch_size, shuffle=False)
 
-    model = r2plus1d_18(num_classes=len(class_names),
-                        pretrained=True,
-                        progress=True)
+    # model = r2plus1d_18(num_classes=len(class_names),
+    #                     pretrained=True,
+    #                     progress=True)
+    model = c3d_bn(num_classes=len(class_names),
+                   temporal_slice=args.temporal_slice)
     model = model.to(args.device)
     # load pre-trained weights
     if len(args.weights):
