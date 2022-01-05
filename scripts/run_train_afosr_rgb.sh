@@ -1,23 +1,27 @@
 #!/bin/bash
 cd "${0%/*}/.." || exit
 
-host=$(hostname)
-echo "[sh] Running on $host"
+hostname=$(hostname)
+echo "[bash] Running on $hostname"
 
-if ((host == "Server2")); then
-  video_dir=/mnt/disk3/datasets/afosr2022/data
-  train_annotation_file=/mnt/disk3/datasets/afosr2022/train.txt
-  test_annotation_file=/mnt/disk3/datasets/afosr2022/val.txt
-  device=cuda:1
-elif ((host == "hungvuong")); then
-  video_dir=/ext_data2/comvis/datasets/afosr2022/data
-  train_annotation_file=/ext_data2/comvis/datasets/afosr2022/train.txt
-  test_annotation_file=/ext_data2/comvis/datasets/afosr2022/val.txt
-  device=cuda:3
-else
-  echo "Host not supported!"
-  exit 1
-fi
+case "$hostname" in
+  "Server2")
+    video_dir=/mnt/disk3/datasets/afosr2022/data
+    train_annotation_file=/mnt/disk3/datasets/afosr2022/train.txt
+    test_annotation_file=/mnt/disk3/datasets/afosr2022/val.txt
+    device=cuda:1
+    ;;
+  "hungvuong")
+    video_dir=/ext_data2/comvis/datasets/afosr2022/data
+    train_annotation_file=/ext_data2/comvis/datasets/afosr2022/train.txt
+    test_annotation_file=/ext_data2/comvis/datasets/afosr2022/val.txt
+    device=cuda:3
+    ;;
+  *)
+    echo "[bash] Server $hostname is not supported!"
+    exit 1
+    ;;
+esac
 
 python3 train_afosr.py \
   --video_dir $video_dir \
