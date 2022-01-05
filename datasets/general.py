@@ -29,4 +29,4 @@ class MultiStreamVideoDataset(Dataset):
         if len(set(label)) > 1:
             raise RuntimeError('Label not consistent.')
         label = label[0]
-        return *data, label
+        return (*data, label)
