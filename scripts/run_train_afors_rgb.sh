@@ -6,15 +6,15 @@ echo "[bash] Running on $hostname"
 
 case "$hostname" in
   "Server2")
-    video_dir=/mnt/disk3/datasets/afosr2022/data
-    train_annotation_file=/mnt/disk3/datasets/afosr2022/train.txt
-    test_annotation_file=/mnt/disk3/datasets/afosr2022/val.txt
+    video_dir=/mnt/disk3/datasets/afors2022/data
+    train_annotation_file=/mnt/disk3/datasets/afors2022/train.txt
+    test_annotation_file=/mnt/disk3/datasets/afors2022/val.txt
     device=cuda:1
     ;;
   "hungvuong")
-    video_dir=/ext_data2/comvis/datasets/afosr2022/data
-    train_annotation_file=/ext_data2/comvis/datasets/afosr2022/train.txt
-    test_annotation_file=/ext_data2/comvis/datasets/afosr2022/val.txt
+    video_dir=/ext_data2/comvis/datasets/afors2022/data
+    train_annotation_file=/ext_data2/comvis/datasets/afors2022/train.txt
+    test_annotation_file=/ext_data2/comvis/datasets/afors2022/val.txt
     device=cuda:3
     ;;
   *)
