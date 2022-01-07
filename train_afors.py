@@ -9,10 +9,10 @@ from sklearn.metrics import (
 )
 from torch.utils.data import DataLoader
 
-from datasets.afosr import *
+from datasets.afors import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
-from models import r2plus1d_18
+from models import r3d_18
 from models.videos.c3d import c3d_bn
 from utils.plot_utils import *
 from utils.trainer_utils import ClassificationTrainer
@@ -28,7 +28,7 @@ def parse_args():
                         help='pretrained weights path.')
     parser.add_argument('--mean_std_file', default='',
                         help='path to output folder.')
-    parser.add_argument('--output_dir', default='outputs/AFOSR',
+    parser.add_argument('--output_dir', default='outputs/AFORS',
                         help='path to output folder.')
 
     parser.add_argument('--crop_size', type=int, default=112,
@@ -80,7 +80,7 @@ def main():
             std = mean_std_dict['std']
             del mean_std_dict
         else:
-            train_set = AFOSRVideoDataset(
+            train_set = AFORSVideoDataset(
                 video_dir=args.video_dir,
                 annotation_file_path=args.train_annotation_file,
                 sampler=FullSampler(),
@@ -102,14 +102,14 @@ def main():
                     always_apply=True),
     ])
 
-    train_set = AFOSRVideoDataset(
+    train_set = AFORSVideoDataset(
         video_dir=args.video_dir,
         annotation_file_path=args.train_annotation_file,
         sampler=OnceRandomTemporalSegmentSampler(n_frames=args.temporal_slice),
         transform=transform,
         use_albumentations=True,
     )
-    test_set = AFOSRVideoDataset(
+    test_set = AFORSVideoDataset(
         video_dir=args.video_dir,
         annotation_file_path=args.test_annotation_file,
         sampler=SystematicSampler(n_frames=args.temporal_slice),
@@ -123,11 +123,11 @@ def main():
     train_loader = DataLoader(train_set, batch_size=args.train_batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=args.test_batch_size, shuffle=False)
 
-    # model = r2plus1d_18(num_classes=len(class_names),
-    #                     pretrained=True,
-    #                     progress=True)
-    model = c3d_bn(num_classes=len(class_names),
-                   temporal_slice=args.temporal_slice)
+    model = r3d_18(num_classes=len(class_names),
+                   pretrained=True,
+                   progress=True)
+    # model = c3d_bn(num_classes=len(class_names),
+    #                temporal_slice=args.temporal_slice)
     model = model.to(args.device)
     # load pre-trained weights
     if len(args.weights):

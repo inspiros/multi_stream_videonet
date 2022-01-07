@@ -7,10 +7,10 @@ from torch.utils.data import Dataset
 
 from .utils.video_sampler import *
 
-__all__ = ['AFOSRVideoDataset']
+__all__ = ['AFORSVideoDataset']
 
 
-class AFOSRVideoDataset(Dataset):
+class AFORSVideoDataset(Dataset):
     def __init__(self,
                  video_dir,
                  annotation_file_path,

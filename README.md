@@ -1,9 +1,9 @@
 
-### Code đề tài AFOSR2022
+### Code đề tài AFORS2022
 
-#### Dataset AFOSR:
+#### Dataset AFORS:
 
-- Dataset class: `datasets.afosr.AFOSRVideoDataset`
+- Dataset class: `datasets.afors.AFORSVideoDataset`
 - Video Sampler classes: (_tất cả nằm trong file `datasets.utils.video_sampler`_)
     - `FullSampler`: lấy hết tất cả các frame - dùng để tính mean và standard deviation.
     - `SystematicSampler`: sample đều ra `n_frames` ảnh.
@@ -16,10 +16,11 @@
     - `LambdaSampler`: tự quy định cách lấy mẫu - advanced.
 
 Code mẫu:
+
 ```python
 import albumentations as A
 
-from datasets.afosr import AFOSRVideoDataset
+from datasets.afors import AFORSVideoDataset
 from datasets.utils.video_sampler import *
 
 transform = A.Compose([
@@ -31,9 +32,9 @@ transform = A.Compose([
                 always_apply=True),
 ])
 
-train_set = AFOSRVideoDataset(
-    video_dir='/mnt/disk3/datasets/afosr2022/data',
-    annotation_file_path='/mnt/disk3/datasets/afosr2022/train.txt',
+train_set = AFORSVideoDataset(
+    video_dir='/mnt/disk3/datasets/afors2022/data',
+    annotation_file_path='/mnt/disk3/datasets/afors2022/train.txt',
     sampler=OnceRandomTemporalSegmentSampler(n_frames=16),
     to_rgb=True,
     transform=transform,
@@ -42,7 +43,7 @@ train_set = AFOSRVideoDataset(
 print(f'Number of train instances: {len(train_set)}')
 ```
 
-Ngoài ra xem và chạy file `check_afosr_dataset.py`.
+Ngoài ra xem và chạy file `check_afors_dataset.py`.
 
 #### Model:
 

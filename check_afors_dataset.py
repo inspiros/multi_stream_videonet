@@ -3,15 +3,15 @@ import argparse
 import cv2
 import numpy as np
 
-from datasets.afosr import *
+from datasets.afors import *
 from datasets.utils.video_sampler import *
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--video_dir', default='/mnt/disk3/datasets/afosr2022/data')
-    parser.add_argument('--train_annotation_file', default='/mnt/disk3/datasets/afosr2022/train.txt')
-    parser.add_argument('--test_annotation_file', default='/mnt/disk3/datasets/afosr2022/val.txt')
+    parser.add_argument('--video_dir', default='/mnt/disk3/datasets/afors2022/data')
+    parser.add_argument('--train_annotation_file', default='/mnt/disk3/datasets/afors2022/train.txt')
+    parser.add_argument('--test_annotation_file', default='/mnt/disk3/datasets/afors2022/val.txt')
 
     parser.add_argument('--videos_per_class', type=int, default=3)
 
@@ -24,14 +24,14 @@ def parse_args():
 def main():
     args = parse_args()
 
-    train_set = AFOSRVideoDataset(
+    train_set = AFORSVideoDataset(
         video_dir=args.video_dir,
         annotation_file_path=args.train_annotation_file,
         sampler=SystematicSampler(n_frames=16),
         to_rgb=False,
         use_albumentations=True,
     )
-    test_set = AFOSRVideoDataset(
+    test_set = AFORSVideoDataset(
         video_dir=args.video_dir,
         annotation_file_path=args.test_annotation_file,
         sampler=SystematicSampler(n_frames=16),
@@ -39,7 +39,7 @@ def main():
         use_albumentations=True,
     )
     print(f'[Preparing dataset] n_train_instances={len(train_set)}, n_test_instances={len(test_set)}')
-    window_name = 'AFOSR2022'
+    window_name = 'AFORS2022'
 
     # not named yet
     class_names = np.unique(train_set.labels).astype(str).tolist()

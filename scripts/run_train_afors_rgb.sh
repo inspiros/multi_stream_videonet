@@ -23,13 +23,13 @@ case "$hostname" in
     ;;
 esac
 
-python3 train_afosr.py \
+python3 train_afors.py \
   --video_dir $video_dir \
   --train_annotation_file $train_annotation_file \
   --test_annotation_file $test_annotation_file \
-  --output_dir outputs/AFOSR/RGB \
+  --output_dir outputs/AFORS/RGB/R3D \
   --max_epoch 30 \
   --batch_size 16 \
   --lr 1e-3 \
   --device $device
-#  --mean_std_file outputs/AFOSR/RGB_mean_std.pt \
+#  --mean_std_file outputs/AFORS/RGB_mean_std.pt \
