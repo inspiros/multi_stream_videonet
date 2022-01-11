@@ -3,6 +3,7 @@ import os
 
 import albumentations as A
 import torch
+import yaml
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 )
@@ -235,17 +236,18 @@ def main():
     print(f'F1: {f1:.02%}')
 
     # save results
-    torch.save({
-        'train_losses': train_losses,
-        'train_accuracies': train_accuracies,
-        'test_losses': test_losses,
-        'test_accuracies': test_accuracies,
-        'confusion_matrix': cm,
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-    }, result_file)
+    with open(result_file, 'w') as rf:
+        yaml.safe_dump({
+            'train_losses': train_losses,
+            'train_accuracies': train_accuracies,
+            'test_losses': test_losses,
+            'test_accuracies': test_accuracies,
+            'confusion_matrix': cm,
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+        }, rf, indent=4, default_flow_style=None, sort_keys=False)
 
     plot_metrics(train_losses, test_losses, label='Losses', save_file=loss_figure_file)
     plot_metrics(train_accuracies, test_accuracies, label='Accuracies', save_file=accuracy_figure_file)

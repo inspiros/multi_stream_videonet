@@ -2,9 +2,15 @@
 cd "${0%/*}/.." || exit
 
 hostname=$(hostname)
-echo "[bash] Running on $hostname"
 
 case "$hostname" in
+  "Server1")
+    frames_dir=/media/data3/datasets/IPN/frames/frames
+    train_annotation_file=/media/data3/datasets/IPN/annotations/Annot_TrainList.csv
+    test_annotation_file=/media/data3/datasets/IPN/annotations/Annot_TestList.csv
+    class_index_file=/media/data3/datasets/IPN/annotations/classIdx.csv
+    device=cuda:0
+    ;;
   "Server2")
     frames_dir=/mnt/disk3/datasets/IPN/frames/frames
     train_annotation_file=/mnt/disk3/datasets/IPN/annotations/Annot_TrainList.csv
@@ -20,17 +26,37 @@ case "$hostname" in
     device=cuda:3
     ;;
   *)
-    echo "[bash] Server $hostname is not supported!"
-    exit 1
+    is_colab=false
+    for dir in /usr/local/lib/python*/dist-packages/google/colab;
+    do
+      if [ -d "$dir" ];
+      then
+        is_colab=true
+      fi
+    done
+
+    if [ $is_colab = true ];
+    then  # run on google colab
+      hostname="[colab]$hostname"
+      frames_dir=/content/drive/MyDrive/datasets/IPN/frames/frames
+      train_annotation_file=/content/drive/MyDrive/datasets/IPN/annotations/Annot_TrainList.csv
+      test_annotation_file=/content/drive/MyDrive/datasets/IPN/annotations/Annot_TestList.csv
+      class_index_file=/content/drive/MyDrive/datasets/IPN/annotations/classIdx.csv
+      device=cuda:0
+    else
+      echo "[bash] Server $hostname is not supported!"
+      exit 1
+    fi
     ;;
 esac
+echo "[bash] Running on $hostname"
 
 python3 train_ipn.py \
   --frames_dir $frames_dir \
   --train_annotation_file $train_annotation_file \
   --test_annotation_file $test_annotation_file \
   --class_index_file $class_index_file \
-  --output_dir outputs/IPN/RGB \
+  --output_dir outputs/IPN/RGB/R2plus1D \
   --temporal_slice 32 \
   --max_epoch 30 \
   --batch_size 8 \

@@ -3,15 +3,16 @@ import os
 
 import albumentations as A
 import torch
+import yaml
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 )
 from torch.utils.data import DataLoader
 
+from datasets.general import MultiStreamVideoDataset
 from datasets.ipn import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
-from datasets.general import MultiStreamVideoDataset
 from models import multi_stream_r2plus1d_18
 from utils.plot_utils import *
 from utils.trainer_utils import ClassificationTrainer
@@ -117,7 +118,7 @@ def main():
         subsets=[IPNFramesDataset(
             frames_dir=frames_dir,
             annotation_file_path=args.train_annotation_file,
-            sampler=OnceRandomTemporalSegmentSampler(n_frames=args.temporal_slice),
+            sampler=RandomTemporalSegmentSampler(n_frames=args.temporal_slice),
             transform=transform,
             use_albumentations=True,
         ) for frames_dir in args.frames_dirs],
@@ -248,17 +249,18 @@ def main():
     print(f'F1: {f1:.02%}')
 
     # save results
-    torch.save({
-        'train_losses': train_losses,
-        'train_accuracies': train_accuracies,
-        'test_losses': test_losses,
-        'test_accuracies': test_accuracies,
-        'confusion_matrix': cm,
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-    }, result_file)
+    with open(result_file, 'w') as rf:
+        yaml.safe_dump({
+            'train_losses': train_losses,
+            'train_accuracies': train_accuracies,
+            'test_losses': test_losses,
+            'test_accuracies': test_accuracies,
+            'confusion_matrix': cm,
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+        }, rf, indent=4, default_flow_style=None, sort_keys=False)
 
     plot_metrics(train_losses, test_losses, label='Losses', save_file=loss_figure_file)
     plot_metrics(train_accuracies, test_accuracies, label='Accuracies', save_file=accuracy_figure_file)

@@ -4,6 +4,7 @@ import os
 import albumentations as A
 import numpy as np
 import torch
+import yaml
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 )
@@ -12,8 +13,8 @@ from torch.utils.data import DataLoader
 from datasets.afors import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
-from models import r3d_18
-from models.videos.c3d import c3d_bn
+from models import r2plus1d_18
+# from models.videos.c3d import c3d_bn
 from utils.plot_utils import *
 from utils.trainer_utils import ClassificationTrainer
 
@@ -68,7 +69,7 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     checkpoint_file = os.path.join(args.output_dir, 'checkpoint.pt')
     model_file = os.path.join(args.output_dir, 'model.pt')
-    result_file = os.path.join(args.output_dir, 'result.pt')
+    result_file = os.path.join(args.output_dir, 'result.yaml')
     accuracy_figure_file = os.path.join(args.output_dir, 'accuracy.png')
     loss_figure_file = os.path.join(args.output_dir, 'loss.png')
     confusion_matrix_figure_file = os.path.join(args.output_dir, 'confusion_matrix.png')
@@ -105,7 +106,7 @@ def main():
     train_set = AFORSVideoDataset(
         video_dir=args.video_dir,
         annotation_file_path=args.train_annotation_file,
-        sampler=OnceRandomTemporalSegmentSampler(n_frames=args.temporal_slice),
+        sampler=RandomTemporalSegmentSampler(n_frames=args.temporal_slice),
         transform=transform,
         use_albumentations=True,
     )
@@ -123,9 +124,9 @@ def main():
     train_loader = DataLoader(train_set, batch_size=args.train_batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=args.test_batch_size, shuffle=False)
 
-    model = r3d_18(num_classes=len(class_names),
-                   pretrained=True,
-                   progress=True)
+    model = r2plus1d_18(num_classes=len(class_names),
+                        pretrained=True,
+                        progress=True)
     # model = c3d_bn(num_classes=len(class_names),
     #                temporal_slice=args.temporal_slice)
     model = model.to(args.device)
@@ -232,17 +233,18 @@ def main():
     print(f'F1: {f1:.02%}')
 
     # save results
-    torch.save({
-        'train_losses': train_losses,
-        'train_accuracies': train_accuracies,
-        'test_losses': test_losses,
-        'test_accuracies': test_accuracies,
-        'confusion_matrix': cm,
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-    }, result_file)
+    with open(result_file, 'w') as rf:
+        yaml.safe_dump({
+            'train_losses': train_losses,
+            'train_accuracies': train_accuracies,
+            'test_losses': test_losses,
+            'test_accuracies': test_accuracies,
+            'confusion_matrix': cm,
+            'accuracy': accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+        }, rf, indent=4, default_flow_style=None, sort_keys=False)
 
     plot_metrics(train_losses, test_losses, label='Losses', save_file=loss_figure_file)
     plot_metrics(train_accuracies, test_accuracies, label='Accuracies', save_file=accuracy_figure_file)
