@@ -1,4 +1,3 @@
-
 ### Code đề tài AFORS2022
 
 #### Dataset AFORS:
@@ -12,10 +11,10 @@
     - `RandomTemporalSegmentSampler`: chia đều ra `n_frames` đoạn đều nhau và trong mỗi đoạn sample ngẫu nhiên ra 1
       frame.
     - `OnceRandomTemporalSegmentSampler`: giống `RandomTemporalSegmentSampler` nhưng các lần random sau sẽ ra giống lần
-      đầu tiên (cách **Minh** đang sử dụng).
+      đầu tiên.
     - `LambdaSampler`: tự quy định cách lấy mẫu - advanced.
 
-Code mẫu:
+Thống nhất sử dụng `RandomTempỏalSegmentSampler` cho tập train và `SystematicSampler` cho tập val/test như code mẫu sau:
 
 ```python
 import albumentations as A
@@ -35,12 +34,21 @@ transform = A.Compose([
 train_set = AFORSVideoDataset(
     video_dir='/mnt/disk3/datasets/afors2022/data',
     annotation_file_path='/mnt/disk3/datasets/afors2022/train.txt',
-    sampler=OnceRandomTemporalSegmentSampler(n_frames=16),
+    sampler=RandomTemporalSegmentSampler(n_frames=16),
+    to_rgb=True,
+    transform=transform,
+    use_albumentations=True,
+)
+test_set = AFORSVideoDataset(
+    video_dir='/mnt/disk3/datasets/afors2022/data',
+    annotation_file_path='/mnt/disk3/datasets/afors2022/test.txt',
+    sampler=SystematicSampler(n_frames=16),
     to_rgb=True,
     transform=transform,
     use_albumentations=True,
 )
 print(f'Number of train instances: {len(train_set)}')
+print(f'Number of test instances: {len(test_set)}')
 ```
 
 Ngoài ra xem và chạy file `check_afors_dataset.py`.
