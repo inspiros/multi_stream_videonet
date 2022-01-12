@@ -14,7 +14,7 @@
       đầu tiên.
     - `LambdaSampler`: tự quy định cách lấy mẫu - advanced.
 
-Thống nhất sử dụng `RandomTempỏalSegmentSampler` cho tập train và `SystematicSampler` cho tập val/test như code mẫu sau:
+Thống nhất sử dụng `RandomTemporalSegmentSampler` cho tập train và `SystematicSampler` cho tập val/test như code mẫu sau:
 
 ```python
 import albumentations as A
