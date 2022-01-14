@@ -243,10 +243,10 @@ def main():
             'test_losses': test_losses,
             'test_accuracies': test_accuracies,
             'confusion_matrix': cm.tolist(),
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'f1': f1,
+            'accuracy': float(accuracy),
+            'precision': float(precision),
+            'recall': float(recall),
+            'f1': float(f1),
         }, rf, indent=4, default_flow_style=None, sort_keys=False)
 
     plot_metrics(train_losses, test_losses, label='Losses', save_file=loss_figure_file)
