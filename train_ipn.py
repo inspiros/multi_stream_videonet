@@ -242,7 +242,7 @@ def main():
             'train_accuracies': train_accuracies,
             'test_losses': test_losses,
             'test_accuracies': test_accuracies,
-            'confusion_matrix': cm,
+            'confusion_matrix': cm.tolist(),
             'accuracy': accuracy,
             'precision': precision,
             'recall': recall,
