@@ -41,6 +41,7 @@ class AFORSVideoDataset(Dataset):
                         video_file = os.path.join(subject_dir, timestamp_dir, video_file)
                         self.clips.append((video_file, subject_dir))
                         self.labels.append(label)
+        self.classes = np.unique(self.labels)
 
     def __len__(self):
         return len(self.clips)
@@ -56,3 +57,7 @@ class AFORSVideoDataset(Dataset):
                       else self.transform(image=frame)['image'] for frame in frames]
         data = torch.from_numpy(np.stack(frames).transpose((3, 0, 1, 2)))
         return data, self.labels[item]
+
+    @property
+    def n_classes(self):
+        return len(self.classes)

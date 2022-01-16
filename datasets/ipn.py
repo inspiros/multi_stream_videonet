@@ -28,7 +28,6 @@ class IPNVideoDataset(Dataset):
 
         self.clips = []
         self.labels = []
-
         with open(self.annotation_file_path) as f:
             lines = [_.strip().split(',') for _ in f.readlines()]
             for line in lines[1:]:
@@ -40,6 +39,7 @@ class IPNVideoDataset(Dataset):
                 end_frame = int(line[4]) - 1
                 self.clips.append((video_file, start_frame, end_frame))
                 self.labels.append(label)
+        self.classes = np.unique(self.labels)
 
     def __len__(self):
         return len(self.clips)
@@ -55,6 +55,10 @@ class IPNVideoDataset(Dataset):
                       else self.transform(image=frame)['image'] for frame in frames]
         data = torch.from_numpy(np.stack(frames).transpose((3, 0, 1, 2)))
         return data, self.labels[item]
+
+    @property
+    def n_classes(self):
+        return len(self.classes)
 
 
 class IPNFramesDataset(Dataset):
@@ -75,7 +79,6 @@ class IPNFramesDataset(Dataset):
 
         self.clips = []
         self.labels = []
-
         with open(self.annotation_file_path) as f:
             lines = [_.strip().split(',') for _ in f.readlines()]
             for line in lines[1:]:
@@ -87,6 +90,7 @@ class IPNFramesDataset(Dataset):
                 end_frame = int(line[4]) - 1
                 self.clips.append((video, start_frame, end_frame))
                 self.labels.append(label)
+        self.classes = np.unique(self.labels)
 
     def __len__(self):
         return len(self.clips)
@@ -102,3 +106,7 @@ class IPNFramesDataset(Dataset):
                       else self.transform(image=frame)['image'] for frame in frames]
         data = torch.from_numpy(np.stack(frames).transpose((3, 0, 1, 2)))
         return data, self.labels[item]
+
+    @property
+    def n_classes(self):
+        return len(self.classes)

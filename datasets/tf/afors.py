@@ -59,9 +59,9 @@ class AFORSVideoDataGenerator(Sequence):
     def __getitem__(self, index):
         X, y = [], []
         inds = self.indices[index * self.batch_size:(index + 1) * self.batch_size]
-        for i in inds:
-            video_file = os.path.join(self.video_dir, self.clips[i][0])
-            frames = self.sampler(video_file, sample_id=i)
+        for item in inds:
+            video_file = os.path.join(self.video_dir, self.clips[item][0])
+            frames = self.sampler(video_file, sample_id=item)
             if self.to_rgb:
                 frames = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
             if self.transform is not None:

@@ -38,8 +38,8 @@ def parse_args():
     parser.add_argument('--output_dir', default='outputs/IPN_RGB_OF',
                         help='path to output folder.')
 
-    parser.add_argument('--crop_size', type=int, default=112,
-                        help='center crop size.')
+    parser.add_argument('--input_size', type=int, default=224,
+                        help='input image size.')
     parser.add_argument('--temporal_slice', type=int, default=16,
                         help='temporal length of each sample.')
 
@@ -106,8 +106,7 @@ def main():
         std = [0.229, 0.224, 0.225]
 
     transform = A.Compose([
-        A.Resize(128, 171, always_apply=True),
-        A.CenterCrop(112, 112, always_apply=True),
+        A.Resize(args.input_size, args.input_size, always_apply=True),
         A.ToFloat(),
         A.Normalize(mean=mean,
                     std=std,
