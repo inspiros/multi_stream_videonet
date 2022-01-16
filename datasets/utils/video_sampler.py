@@ -19,6 +19,8 @@ __all__ = [
 
 
 class _MediaCapture:
+    """Wrapper of cv2.VideoCapture class with sample method."""
+
     def __init__(self, source):
         self.source = source
         if isinstance(source, Sequence) and not isinstance(source, str):
@@ -107,6 +109,8 @@ class _MediaCapture:
 
 
 class _BaseSampler(ABC):
+    """An abstract sampler."""
+
     def __init__(self, n_frames=16):
         if not n_frames:
             raise ValueError(f'n_frames must be positive number, got {n_frames}.')
@@ -140,6 +144,8 @@ class _BaseSampler(ABC):
 
 
 class _BaseMemorizedSampler(_BaseSampler, ABC):
+    """An abstract sampler that has internal memory."""
+
     def __init__(self, n_frames=16):
         super(_BaseMemorizedSampler, self).__init__(n_frames)
         self.memory = {}
@@ -154,19 +160,23 @@ class _BaseMemorizedSampler(_BaseSampler, ABC):
 
 
 class FullSampler(_BaseSampler):
-    """Sample all frames"""
+    """Sample all frames."""
 
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         return list(range(start_frame, end_frame))
 
 
 class SystematicSampler(_BaseSampler):
+    """Systematically sample n_frames."""
+
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         sampled_frame_ids = np.linspace(start_frame, end_frame, self.n_frames)
         return sampled_frame_ids.round().astype(np.int64)
 
 
 class RandomSampler(_BaseSampler):
+    """Randomly sample n_frames."""
+
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         sampled_frame_ids = start_frame + np.random.rand(self.n_frames) * (end_frame - start_frame)
         sampled_frame_ids.sort()
@@ -174,6 +184,10 @@ class RandomSampler(_BaseSampler):
 
 
 class OnceRandomSampler(_BaseMemorizedSampler, RandomSampler):
+    """Randomly sample n_frames during first batch,
+    and return the identical frames for later batches.
+    """
+
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         if sample_id in self.memory:
             return self.memory[sample_id]
@@ -183,6 +197,10 @@ class OnceRandomSampler(_BaseMemorizedSampler, RandomSampler):
 
 
 class RandomTemporalSegmentSampler(_BaseSampler):
+    """Divide the video into n_frames even temporal segments,
+    then randomly sample one frame from each segment.
+    """
+
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         segments = np.linspace(start_frame, end_frame, self.n_frames + 1)
         segment_length = (end_frame - start_frame) / self.n_frames
@@ -191,6 +209,11 @@ class RandomTemporalSegmentSampler(_BaseSampler):
 
 
 class OnceRandomTemporalSegmentSampler(_BaseMemorizedSampler, RandomTemporalSegmentSampler):
+    """Divide the video into n_frames even temporal segments,
+    then randomly sample one frame from each segment during the first batch,
+    and return the identical frames for later batches.
+    """
+
     def _get_sampled_frame_ids(self, source, start_frame, end_frame, sample_id=None):
         if sample_id in self.memory:
             return self.memory[sample_id]
@@ -200,6 +223,10 @@ class OnceRandomTemporalSegmentSampler(_BaseMemorizedSampler, RandomTemporalSegm
 
 
 class LambdaSampler(_BaseSampler):
+    """Specify a custom sampling function that takes source, start_frame, end_frame, sample_id
+    as inputs; and return the indices of sampled frames.
+    """
+
     def __init__(self, get_sampled_frame_ids_func):
         super(LambdaSampler, self).__init__(n_frames=0)
         self.get_sampled_frame_ids_func = get_sampled_frame_ids_func
@@ -209,6 +236,14 @@ class LambdaSampler(_BaseSampler):
 
 
 class synchronize_state:
+    """Utility function that is used for synchronizing random states of multiple
+    random-based samplers. Usage:
+
+    >>> with synchronize_state(samplers=random_samplers):
+    >>>     # do sampling here, the states of `random_samplers` are synchronized.
+    >>>     pass
+    """
+
     def __init__(self, samplers: Union[List[_BaseSampler], Generator]):
         if isinstance(samplers, types.GeneratorType):
             samplers = list(samplers)
