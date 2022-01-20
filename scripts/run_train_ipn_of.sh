@@ -1,6 +1,7 @@
 #!/bin/bash
 cd "${0%/*}/.." || exit
 
+arch=$1
 hostname=$(hostname)
 
 case "$hostname" in
@@ -58,6 +59,7 @@ python3 train_ipn.py \
   --class_index_file $class_index_file \
   --output_dir outputs/IPN/OF/R2plus1D \
   --temporal_slice 32 \
+  --arch $arch \
   --max_epoch 30 \
   --batch_size 8 \
   --lr 1e-3 \

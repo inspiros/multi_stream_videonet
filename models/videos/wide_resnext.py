@@ -1,11 +1,14 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
 import math
 from functools import partial
 
-__all__ = ['ResNeXt', 'wide_resnext50', 'wide_resnext101', 'wide_resnext152', 'get_fine_tuning_parameters']
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+__all__ = ['wide_resnext50',
+           'wide_resnext101',
+           'wide_resnext152',
+           'get_fine_tuning_parameters']
 
 
 def conv3x3x3(in_planes, out_planes, stride=1):
@@ -222,6 +225,6 @@ if __name__ == "__main__":
     # model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

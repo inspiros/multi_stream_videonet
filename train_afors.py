@@ -13,8 +13,7 @@ from torch.utils.data import DataLoader
 from datasets.afors import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
-from models import r2plus1d_18
-# from models.videos.c3d import c3d_bn
+from models.videos import *
 from utils.plot_utils import *
 from utils.trainer_utils import ClassificationTrainer
 
@@ -37,6 +36,8 @@ def parse_args():
     parser.add_argument('--temporal_slice', type=int, default=16,
                         help='temporal length of each sample.')
 
+    parser.add_argument('--arch', default=None, required=True,
+                        help='architecture.')
     parser.add_argument('--max_epoch', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--train_batch_size', type=int, default=None)
@@ -51,6 +52,7 @@ def parse_args():
                         help='number of epochs between each checkpoint.')
 
     args = parser.parse_args()
+    get_arch(args.arch)
     args.device = torch.device(args.device)
     if args.train_batch_size is None:
         args.train_batch_size = args.batch_size
@@ -123,9 +125,7 @@ def main():
     train_loader = DataLoader(train_set, batch_size=args.train_batch_size, shuffle=True)
     test_loader = DataLoader(test_set, batch_size=args.test_batch_size, shuffle=False)
 
-    model = r2plus1d_18(num_classes=len(class_names),
-                        pretrained=True,
-                        progress=True)
+    model = get_model(args.arch, num_classes=len(class_names))
     # model = c3d_bn(num_classes=len(class_names),
     #                temporal_slice=args.temporal_slice)
     model = model.to(args.device)

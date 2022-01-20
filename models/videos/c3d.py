@@ -10,7 +10,6 @@ Proceedings of the IEEE international conference on computer vision. 2015.
 import torch
 import torch.nn as nn
 
-
 __all__ = [
     'c3d',
     'c3d_bn',

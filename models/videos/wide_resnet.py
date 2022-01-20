@@ -1,11 +1,15 @@
+import math
+from functools import partial
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import math
-from functools import partial
 
-__all__ = ['WideResNet', 'wide_resnet18', 'wide_resnet34', 'wide_resnet50', 'wide_resnet101',
+__all__ = ['wide_resnet18',
+           'wide_resnet34',
+           'wide_resnet50',
+           'wide_resnet101',
            'get_fine_tuning_parameters']
 
 

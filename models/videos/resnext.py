@@ -5,7 +5,10 @@ from torch.autograd import Variable
 import math
 from functools import partial
 
-__all__ = ['ResNeXt', 'resnext50', 'resnext101', 'resnext152', 'get_fine_tuning_parameters']
+__all__ = ['resnext50',
+           'resnext101',
+           'resnext152',
+           'get_fine_tuning_parameters']
 
 
 def conv3x3x3(in_planes, out_planes, stride=1):

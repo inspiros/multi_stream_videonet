@@ -1,12 +1,13 @@
-'''MobilenetV2 in PyTorch.
+"""MobilenetV2 in PyTorch.
 
 See the paper "MobileNetV2: Inverted Residuals and Linear Bottlenecks" for more details.
-'''
+"""
 import torch
 import math
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
+
+__all__ = ['mobilenetv2']
 
 
 def conv_bn(inp, oup, stride):
@@ -152,7 +153,7 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def get_model(**kwargs):
+def mobilenetv2(**kwargs):
     """
     Returns the model.
     """
@@ -161,11 +162,11 @@ def get_model(**kwargs):
 
 
 if __name__ == "__main__":
-    model = get_model()
+    model = mobilenetv2()
     model = model.cpu()
     model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

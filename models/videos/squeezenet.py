@@ -1,17 +1,15 @@
-'''SqueezeNet in PyTorch.
+"""SqueezeNet in PyTorch.
 
 See the paper "SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size" for more details.
-'''
+"""
 
 import math
 import torch
 import torch.nn as nn
-import torch.nn.init as init
-import torch.nn.functional as F
-from torch.autograd import Variable
-from functools import partial
 
-__all__ = ['SqueezeNet', 'squeezenet1_0', 'squeezenet1_1', 'get_fine_tuning_parameters']
+__all__ = ['squeezenet1_0',
+           'squeezenet1_1',
+           'get_fine_tuning_parameters']
 
 
 class Fire(nn.Module):
@@ -154,20 +152,12 @@ def squeezenet1_1(**kwargs):
     return model
 
 
-def get_model(**kwargs):
-    """
-    Returns the model.
-    """
-    model = SqueezeNet(**kwargs)
-    return model
-
-
 if __name__ == '__main__':
     model = SqueezeNet()
     model = model.cpu()
     model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

@@ -4,10 +4,12 @@ import torch.nn.functional as F
 from collections import OrderedDict
 import math
 
-from torch.autograd import Variable
-
 __all__ = [
-    'DenseNet', 'densenet121', 'densenet169', 'densenet201', 'densenet264', 'get_fine_tuning_parameters'
+    'densenet121',
+    'densenet169',
+    'densenet201',
+    'densenet264',
+    'get_fine_tuning_parameters'
 ]
 
 
@@ -222,6 +224,6 @@ if __name__ == "__main__":
     # model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

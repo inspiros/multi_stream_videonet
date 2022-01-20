@@ -1,6 +1,7 @@
 #!/bin/bash
 cd "${0%/*}/.." || exit
 
+arch=$1
 hostname=$(hostname)
 
 case "$hostname" in
@@ -52,6 +53,7 @@ python3 train_afors.py \
   --train_annotation_file $train_annotation_file \
   --test_annotation_file $test_annotation_file \
   --output_dir outputs/AFORS/RGB/R2plus1D \
+  --arch $arch \
   --max_epoch 30 \
   --batch_size 16 \
   --lr 1e-3 \

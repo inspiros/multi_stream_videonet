@@ -303,6 +303,15 @@ class VideoResNet(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
+    def load_state_dict(self, state_dict, strict=False):
+        current_state_dict = self.state_dict()
+        for key in list(state_dict.keys()):
+            if key in current_state_dict.keys() and state_dict[key].shape != current_state_dict[key].shape:
+                print(f"[Warning] Key {key} has incompatible shape of {state_dict[key].shape}, "
+                      f"expecting {current_state_dict[key].shape}.")
+                state_dict.pop(key)
+        super().load_state_dict(state_dict, strict)
+
 
 def _video_resnet(arch: str, pretrained: bool = False, progress: bool = True, **kwargs: Any) -> VideoResNet:
     model = VideoResNet(**kwargs)

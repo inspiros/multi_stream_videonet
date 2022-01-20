@@ -8,7 +8,6 @@ References
 import torch
 import torch.nn as nn
 
-
 __all__ = [
     'r2plus1d_10',
     'r2plus1d_16',

@@ -1,12 +1,13 @@
-'''MobileNet in PyTorch.
+"""MobileNet in PyTorch.
 
 See the paper "MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications"
 for more details.
-'''
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
+
+__all__ = ['mobilenet']
 
 
 def conv_bn(inp, oup, stride):
@@ -35,7 +36,6 @@ class Block(nn.Module):
 
 
 class MobileNet(nn.Module):
-    # def __init__(self, num_classes=600, sample_size=224, width_mult=1.):
     def __init__(self, num_classes=600, sample_size=112, width_mult=1.):
         super(MobileNet, self).__init__()
 
@@ -98,7 +98,7 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def get_model(**kwargs):
+def mobilenet(**kwargs):
     """
     Returns the model.
     """
@@ -107,11 +107,11 @@ def get_model(**kwargs):
 
 
 if __name__ == '__main__':
-    model = get_model()
+    model = mobilenet()
     model = model.cpu()
     # model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

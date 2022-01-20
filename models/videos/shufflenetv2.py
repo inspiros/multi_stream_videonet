@@ -1,15 +1,13 @@
-'''ShuffleNetV2 in PyTorch.
+"""ShuffleNetV2 in PyTorch.
 
 See the paper "ShuffleNet V2: Practical Guidelines for Efficient CNN Architecture Design" for more details.
-'''
+"""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
-from collections import OrderedDict
-from torch.nn import init
-import math
+
+__all__ = ['shufflenetv2']
 
 
 def conv_bn(inp, oup, stride):
@@ -188,7 +186,7 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def get_model(**kwargs):
+def shufflenetv2(**kwargs):
     """
     Returns the model.
     """
@@ -197,11 +195,11 @@ def get_model(**kwargs):
 
 
 if __name__ == "__main__":
-    model = get_model()
+    model = shufflenetv2()
     model = model.cpu()
     model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

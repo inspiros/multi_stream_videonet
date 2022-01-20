@@ -1,8 +1,8 @@
 import albumentations as A
+from torch.utils.data import DataLoader
 
 from datasets.afors import AFORSVideoDataset
 from datasets.utils.video_sampler import *
-from torch.utils.data import DataLoader
 
 
 def main():

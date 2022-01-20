@@ -1,11 +1,12 @@
-'''ShuffleNet in PyTorch.
+"""ShuffleNet in PyTorch.
 
 See the paper "ShuffleNet: An Extremely Efficient Convolutional Neural Network for Mobile Devices" for more details.
-'''
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
+
+__all__ = ['shufflenet']
 
 
 def conv_bn(inp, oup, stride):
@@ -17,7 +18,7 @@ def conv_bn(inp, oup, stride):
 
 
 def channel_shuffle(x, groups):
-    '''Channel shuffle: [N,C,H,W] -> [N,g,C/g,H,W] -> [N,C/g,g,H,w] -> [N,C,H,W]'''
+    """Channel shuffle: [N,C,H,W] -> [N,g,C/g,H,W] -> [N,C/g,g,H,w] -> [N,C,H,W]"""
     batchsize, num_channels, depth, height, width = x.data.size()
     channels_per_group = num_channels // groups
     # reshape
@@ -146,7 +147,7 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def get_model(**kwargs):
+def shufflenet(**kwargs):
     """
     Returns the model.
     """
@@ -155,11 +156,11 @@ def get_model(**kwargs):
 
 
 if __name__ == "__main__":
-    model = get_model(groups=3, num_classes=600, width_mult=1)
+    model = shufflenet(groups=3, num_classes=600, width_mult=1)
     model = model.cpu()
     model = nn.DataParallel(model, device_ids=None)
     print(model)
 
-    input_var = Variable(torch.randn(1, 3, 16, 112, 112))
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)
