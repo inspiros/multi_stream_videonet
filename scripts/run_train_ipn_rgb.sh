@@ -57,9 +57,10 @@ python3 train_ipn.py \
   --train_annotation_file $train_annotation_file \
   --test_annotation_file $test_annotation_file \
   --class_index_file $class_index_file \
-  --output_dir outputs/IPN/RGB/R2plus1D \
+  --output_dir "outputs/IPN/RGB/$arch" \
+  --arch "$arch" \
+  --input_size 224 \
   --temporal_slice 32 \
-  --arch $arch \
   --max_epoch 30 \
   --batch_size 8 \
   --lr 1e-3 \

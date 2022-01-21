@@ -31,13 +31,13 @@ def parse_args():
     parser.add_argument('--output_dir', default='outputs/AFORS',
                         help='path to output folder.')
 
+    parser.add_argument('--arch', default=None, required=True,
+                        help='architecture.')
     parser.add_argument('--input_size', type=int, default=224,
                         help='input image size.')
     parser.add_argument('--temporal_slice', type=int, default=16,
                         help='temporal length of each sample.')
 
-    parser.add_argument('--arch', default=None, required=True,
-                        help='architecture.')
     parser.add_argument('--max_epoch', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--train_batch_size', type=int, default=None)

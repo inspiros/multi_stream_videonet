@@ -52,8 +52,10 @@ python3 train_afors.py \
   --video_dir $video_dir \
   --train_annotation_file $train_annotation_file \
   --test_annotation_file $test_annotation_file \
-  --output_dir outputs/AFORS/RGB/R2plus1D \
-  --arch $arch \
+  --output_dir "outputs/AFORS/RGB/$arch" \
+  --arch "$arch" \
+  --input_size 224 \
+  --temporal_slice 16 \
   --max_epoch 30 \
   --batch_size 16 \
   --lr 1e-3 \
