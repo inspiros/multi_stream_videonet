@@ -6,13 +6,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 __all__ = [
-    'resnet10',
-    'resnet18',
-    'resnet34',
-    'resnet50',
-    'resnet101',
-    'resnet152',
-    'resnet200'
+    'resnet3d_10',
+    'resnet3d_18',
+    'resnet3d_34',
+    'resnet3d_50',
+    'resnet3d_101',
+    'resnet3d_152',
+    'resnet3d_200'
 ]
 
 
@@ -231,14 +231,14 @@ def get_fine_tuning_parameters(model, ft_begin_index):
     return parameters
 
 
-def resnet10(**kwargs):
+def resnet3d_10(**kwargs):
     """Constructs a ResNet-10 model.
     """
     model = ResNet(BasicBlock, [1, 1, 1, 1], **kwargs)
     return model
 
 
-def resnet18(**kwargs):
+def resnet3d_18(**kwargs):
     """Constructs a ResNet-18 model.
     """
     model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
@@ -252,35 +252,35 @@ def resnet26(**kwargs):
     return model
 
 
-def resnet34(**kwargs):
+def resnet3d_34(**kwargs):
     """Constructs a ResNet-34 model.
     """
     model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
     return model
 
 
-def resnet50(**kwargs):
+def resnet3d_50(**kwargs):
     """Constructs a ResNet-50 model.
     """
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     return model
 
 
-def resnet101(**kwargs):
+def resnet3d_101(**kwargs):
     """Constructs a ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
     return model
 
 
-def resnet152(**kwargs):
+def resnet3d_152(**kwargs):
     """Constructs a ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
     return model
 
 
-def resnet200(**kwargs):
+def resnet3d_200(**kwargs):
     """Constructs a ResNet-101 model.
     """
     model = ResNet(Bottleneck, [3, 24, 36, 3], **kwargs)
@@ -288,7 +288,7 @@ def resnet200(**kwargs):
 
 
 if __name__ == '__main__':
-    model = resnet50(sample_height=112, sample_width=112, sample_duration=16)
+    model = resnet3d_50(sample_height=112, sample_width=112, sample_duration=16)
     print(model)
 
     inputs = torch.rand(5, 3, 16, 112, 112)

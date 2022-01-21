@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['shufflenetv2']
+__all__ = ['shufflenet3d_v2']
 
 
 def conv_bn(inp, oup, stride):
@@ -186,16 +186,15 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def shufflenetv2(**kwargs):
+def shufflenet3d_v2(**kwargs):
     """
     Returns the model.
     """
-    model = ShuffleNetV2(**kwargs)
-    return model
+    return ShuffleNetV2(**kwargs)
 
 
 if __name__ == "__main__":
-    model = shufflenetv2()
+    model = shufflenet3d_v2()
     model = model.cpu()
     print(model)
 

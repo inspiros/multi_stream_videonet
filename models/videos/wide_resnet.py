@@ -6,10 +6,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-__all__ = ['wide_resnet18',
-           'wide_resnet34',
-           'wide_resnet50',
-           'wide_resnet101',
+__all__ = ['wide_resnet3d_18',
+           'wide_resnet3d_34',
+           'wide_resnet3d_50',
+           'wide_resnet3d_101',
            'get_fine_tuning_parameters']
 
 
@@ -183,28 +183,28 @@ def get_fine_tuning_parameters(model, ft_begin_index):
     return parameters
 
 
-def wide_resnet18(**kwargs):
+def wide_resnet3d_18(**kwargs):
     """Constructs a ResNet-18 model.
     """
     model = WideResNet(WideBottleneck, [2, 2, 2, 2], **kwargs)
     return model
 
 
-def wide_resnet34(**kwargs):
+def wide_resnet3d_34(**kwargs):
     """Constructs a ResNet-34 model.
     """
     model = WideResNet(WideBottleneck, [3, 4, 6, 3], **kwargs)
     return model
 
 
-def wide_resnet50(**kwargs):
+def wide_resnet3d_50(**kwargs):
     """Constructs a ResNet-50 model.
     """
     model = WideResNet(WideBottleneck, [3, 4, 6, 3], **kwargs)
     return model
 
 
-def wide_resnet101(**kwargs):
+def wide_resnet3d_101(**kwargs):
     """Constructs a ResNet-101 model.
     """
     model = WideResNet(WideBottleneck, [3, 4, 23, 3], **kwargs)
@@ -212,7 +212,7 @@ def wide_resnet101(**kwargs):
 
 
 if __name__ == "__main__":
-    model = wide_resnet50()
+    model = wide_resnet3d_50()
     model = model.cpu()
     print(model)
 

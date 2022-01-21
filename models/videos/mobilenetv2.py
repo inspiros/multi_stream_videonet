@@ -7,7 +7,7 @@ import math
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['mobilenetv2']
+__all__ = ['mobilenet3d_v2']
 
 
 def conv_bn(inp, oup, stride):
@@ -153,16 +153,15 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def mobilenetv2(**kwargs):
+def mobilenet3d_v2(**kwargs):
     """
     Returns the model.
     """
-    model = MobileNetV2(**kwargs)
-    return model
+    return MobileNetV2(**kwargs)
 
 
 if __name__ == "__main__":
-    model = mobilenetv2()
+    model = mobilenet3d_v2()
     model = model.cpu()
     print(model)
 

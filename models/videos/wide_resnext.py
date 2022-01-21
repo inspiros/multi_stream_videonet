@@ -5,9 +5,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-__all__ = ['wide_resnext50',
-           'wide_resnext101',
-           'wide_resnext152',
+__all__ = ['wide_resnext3d_50',
+           'wide_resnext3d_101',
+           'wide_resnext3d_152',
            'get_fine_tuning_parameters']
 
 
@@ -198,21 +198,21 @@ def get_fine_tuning_parameters(model, ft_begin_index):
     return parameters
 
 
-def wide_resnext50(**kwargs):
+def wide_resnext3d_50(**kwargs):
     """Constructs a ResNext-50 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 4, 6, 3], **kwargs)
     return model
 
 
-def wide_resnext101(**kwargs):
+def wide_resnext3d_101(**kwargs):
     """Constructs a ResNext-101 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 4, 23, 3], **kwargs)
     return model
 
 
-def wide_resnext152(**kwargs):
+def wide_resnext3d_152(**kwargs):
     """Constructs a ResNext-101 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 8, 36, 3], **kwargs)
@@ -220,7 +220,7 @@ def wide_resnext152(**kwargs):
 
 
 if __name__ == "__main__":
-    model = wide_resnext152()
+    model = wide_resnext3d_50()
     model = model.cpu()
     print(model)
 

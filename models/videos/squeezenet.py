@@ -7,8 +7,8 @@ import math
 import torch
 import torch.nn as nn
 
-__all__ = ['squeezenet1_0',
-           'squeezenet1_1',
+__all__ = ['squeezenet3d_1_0',
+           'squeezenet3d_1_1',
            'get_fine_tuning_parameters']
 
 
@@ -142,18 +142,17 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def squeezenet1_0(**kwargs):
-    model = SqueezeNet(version=1.0, **kwargs)
-    return model
+def squeezenet3d_1_0(**kwargs):
+    return SqueezeNet(version=1.0, **kwargs)
 
 
-def squeezenet1_1(**kwargs):
+def squeezenet3d_1_1(**kwargs):
     model = SqueezeNet(version=1.1, **kwargs)
     return model
 
 
 if __name__ == '__main__':
-    model = SqueezeNet()
+    model = squeezenet3d_1_0()
     model = model.cpu()
     print(model)
 

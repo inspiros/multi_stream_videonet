@@ -28,8 +28,9 @@ _TODO_
 ### Note:
 
 Argument `model_arch` là tên của architecture. Các model cần chạy:
+- `c3d_bn`
 - `r2plus1d_18`
 - `r3d_18`
 - `densenet3d_21`
-- `mobilenetv2`
+- `mobilenet3d_v2`
 - `efficientnet3d_b0`

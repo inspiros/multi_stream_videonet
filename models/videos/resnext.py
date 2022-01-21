@@ -5,9 +5,9 @@ from torch.autograd import Variable
 import math
 from functools import partial
 
-__all__ = ['resnext50',
-           'resnext101',
-           'resnext152',
+__all__ = ['resnext3d_50',
+           'resnext3d_101',
+           'resnext3d_152',
            'get_fine_tuning_parameters']
 
 
@@ -205,21 +205,21 @@ def get_fine_tuning_parameters(model, ft_portion):
         raise ValueError("Unsupported ft_portion: 'complete' or 'last_layer' expected")
 
 
-def resnext50(**kwargs):
+def resnext3d_50(**kwargs):
     """Constructs a ResNet-50 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 4, 6, 3], **kwargs)
     return model
 
 
-def resnext101(**kwargs):
+def resnext3d_101(**kwargs):
     """Constructs a ResNet-101 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 4, 23, 3], **kwargs)
     return model
 
 
-def resnext152(**kwargs):
+def resnext3d_152(**kwargs):
     """Constructs a ResNet-101 model.
     """
     model = ResNeXt(ResNeXtBottleneck, [3, 8, 36, 3], **kwargs)
@@ -227,7 +227,7 @@ def resnext152(**kwargs):
 
 
 if __name__ == "__main__":
-    model = resnext152()
+    model = resnext3d_50()
     model = model.cpu()
     print(model)
 
