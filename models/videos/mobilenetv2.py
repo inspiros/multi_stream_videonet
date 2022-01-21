@@ -164,7 +164,6 @@ def mobilenetv2(**kwargs):
 if __name__ == "__main__":
     model = mobilenetv2()
     model = model.cpu()
-    model = nn.DataParallel(model, device_ids=None)
     print(model)
 
     input_var = torch.randn(1, 3, 16, 112, 112)

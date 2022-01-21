@@ -5,10 +5,12 @@ from collections import OrderedDict
 import math
 
 __all__ = [
-    'densenet121',
-    'densenet169',
-    'densenet201',
-    'densenet264',
+    'densenet3d_15',
+    'densenet3d_21',
+    'densenet3d_121',
+    'densenet3d_169',
+    'densenet3d_201',
+    'densenet3d_264',
     'get_fine_tuning_parameters'
 ]
 
@@ -139,7 +141,7 @@ class DenseNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
-                m.weight = nn.init.kaiming_normal(m.weight, mode='fan_out')
+                m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
             elif isinstance(m, nn.BatchNorm3d) or isinstance(m, nn.BatchNorm3d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -182,46 +184,57 @@ def get_fine_tuning_parameters(model, ft_begin_index):
     return parameters
 
 
-def densenet121(**kwargs):
-    model = DenseNet(
+def densenet3d_15(**kwargs):
+    return DenseNet(
+        num_init_features=64,
+        growth_rate=32,
+        block_config=(2, 2, 2, 2),
+        **kwargs)
+
+
+def densenet3d_21(**kwargs):
+    return DenseNet(
+        num_init_features=64,
+        growth_rate=32,
+        block_config=(2, 2, 2, 2),
+        **kwargs)
+
+
+def densenet3d_121(**kwargs):
+    return DenseNet(
         num_init_features=64,
         growth_rate=32,
         block_config=(6, 12, 24, 16),
         **kwargs)
-    return model
 
 
-def densenet169(**kwargs):
-    model = DenseNet(
+def densenet3d_169(**kwargs):
+    return DenseNet(
         num_init_features=64,
         growth_rate=32,
         block_config=(6, 12, 32, 32),
         **kwargs)
-    return model
 
 
-def densenet201(**kwargs):
-    model = DenseNet(
+def densenet3d_201(**kwargs):
+    return DenseNet(
         num_init_features=64,
         growth_rate=32,
         block_config=(6, 12, 48, 32),
         **kwargs)
-    return model
 
 
-def densenet264(**kwargs):
-    model = DenseNet(
+def densenet3d_264(**kwargs):
+    return DenseNet(
         num_init_features=64,
         growth_rate=32,
         block_config=(6, 12, 64, 48),
         **kwargs)
-    return model
 
 
 if __name__ == "__main__":
-    model = densenet121()
+    model = densenet3d_21(num_classes=10)
     model = model.cpu()
-    # model = nn.DataParallel(model, device_ids=None)
     print(model)
 
     input_var = torch.randn(1, 3, 16, 112, 112)
