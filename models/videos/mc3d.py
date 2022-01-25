@@ -196,11 +196,10 @@ class MC3D(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        # Flatten the layer to fc
-        x_feat = x.flatten(1)
-        x = self.fc(x_feat)
+        x = x.flatten(1)
+        x = self.fc(x)
 
-        return x, x_feat
+        return x
 
     def _make_layer(self, block, conv_builder, planes, blocks, stride=1):
         downsample = None
