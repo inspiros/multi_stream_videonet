@@ -52,7 +52,7 @@ class Fire(nn.Module):
 class SqueezeNet(nn.Module):
 
     def __init__(self,
-                 sample_size=112,
+                 sample_size=224,
                  sample_duration=16,
                  version=1.1,
                  num_classes=600):
@@ -100,10 +100,9 @@ class SqueezeNet(nn.Module):
                 Fire(512, 64, 256, 256, use_bypass=True),
             )
         # Final convolution is initialized differently form the rest
-        final_conv = nn.Conv3d(512, self.num_classes, kernel_size=1)
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
-            final_conv,
+            nn.Conv3d(512, self.num_classes, kernel_size=1),
             nn.ReLU(inplace=True),
             nn.AvgPool3d((last_duration, last_size, last_size), stride=1)
         )
@@ -118,7 +117,7 @@ class SqueezeNet(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.classifier(x)
-        return x.view(x.size(0), -1)
+        return x.flatten(1)
 
 
 def get_fine_tuning_parameters(model, ft_portion):
@@ -152,10 +151,10 @@ def squeezenet3d_1_1(**kwargs):
 
 
 if __name__ == '__main__':
-    model = squeezenet3d_1_0()
+    model = squeezenet3d_1_1(num_classes=10)
     model = model.cpu()
     print(model)
 
-    input_var = torch.randn(1, 3, 16, 112, 112)
+    input_var = torch.randn(1, 3, 16, 224, 224)
     output = model(input_var)
     print(output.shape)

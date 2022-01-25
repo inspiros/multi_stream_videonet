@@ -205,8 +205,9 @@ def c3d_bn(**kwargs):
 
 
 if __name__ == '__main__':
-    model = c3d(num_classes=12)
+    model = c3d_bn(num_classes=10)
+    print(model)
 
-    inputs = torch.randn(5, 3, 16, 112, 112)
+    inputs = torch.randn(1, 3, 16, 112, 112)
     output = model(inputs)
     print(output.shape)

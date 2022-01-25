@@ -110,9 +110,9 @@ class ResNet(nn.Module):
     def __init__(self,
                  block,
                  layers,
-                 sample_height,
-                 sample_width,
-                 sample_duration,
+                 sample_duration=16,
+                 sample_height=224,
+                 sample_width=224,
                  shortcut_type='B',
                  num_classes=400):
         self.inplanes = 64
@@ -288,9 +288,9 @@ def resnet3d_200(**kwargs):
 
 
 if __name__ == '__main__':
-    model = resnet3d_50(sample_height=112, sample_width=112, sample_duration=16)
+    model = resnet3d_18(num_classes=10, sample_duration=16)
     print(model)
 
-    inputs = torch.rand(5, 3, 16, 112, 112)
+    inputs = torch.rand(1, 3, 16, 224, 224)
     output = model(inputs)
     print(output.shape)

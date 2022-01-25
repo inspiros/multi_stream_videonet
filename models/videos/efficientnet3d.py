@@ -519,7 +519,7 @@ def efficientnet3d_b9(**kwargs):
 
 
 if __name__ == '__main__':
-    model = efficientnet3d_b0(num_classes=12)
+    model = efficientnet3d_b0(num_classes=10)
 
     inputs = torch.randn(1, 3, 16, 224, 224)
     output = model(inputs)
