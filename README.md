@@ -32,5 +32,5 @@ Argument `model_arch` là tên của architecture. Các model cần chạy:
 - `r2plus1d_18`
 - `r3d_18`
 - `densenet3d_21`
-- `mobilenet3d_v2`
+- `mobilenet3d`
 - `efficientnet3d_b0`
