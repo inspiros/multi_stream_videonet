@@ -67,7 +67,6 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-    # def __init__(self, num_classes=1000, sample_size=224, width_mult=1.):
     def __init__(self, num_classes=600, sample_size=112, width_mult=1.):
         super(MobileNetV2, self).__init__()
         block = InvertedResidual
@@ -162,9 +161,8 @@ def mobilenet3d_v2(**kwargs):
 
 if __name__ == "__main__":
     model = mobilenet3d_v2(num_classes=10)
-    model = model.cpu()
     print(model)
 
-    input_var = torch.randn(1, 3, 16, 224, 224)
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

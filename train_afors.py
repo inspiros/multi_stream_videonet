@@ -33,7 +33,7 @@ def parse_args():
 
     parser.add_argument('--arch', default=None, required=True,
                         help='architecture.')
-    parser.add_argument('--input_size', type=int, default=224,
+    parser.add_argument('--input_size', type=int, default=112,
                         help='input image size.')
     parser.add_argument('--temporal_slice', type=int, default=16,
                         help='temporal length of each sample.')

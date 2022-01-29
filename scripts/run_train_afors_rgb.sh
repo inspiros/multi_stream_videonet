@@ -54,7 +54,7 @@ python3 train_afors.py \
   --test_annotation_file $test_annotation_file \
   --output_dir "outputs/AFORS/RGB/$arch" \
   --arch "$arch" \
-  --input_size 224 \
+  --input_size 112 \
   --temporal_slice 16 \
   --max_epoch 30 \
   --batch_size 16 \

@@ -107,9 +107,8 @@ def mobilenet3d(**kwargs):
 
 if __name__ == '__main__':
     model = mobilenet3d(num_classes=10)
-    model = model.cpu()
     print(model)
 
-    input_var = torch.randn(1, 3, 16, 224, 224)
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

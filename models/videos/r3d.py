@@ -286,6 +286,6 @@ if __name__ == '__main__':
     model = r3d_18(num_classes=10)
     print(model)
 
-    inputs = torch.randn(1, 3, 16, 224, 224)
+    inputs = torch.randn(1, 3, 16, 112, 112)
     output = model(inputs)
     print(output.shape)

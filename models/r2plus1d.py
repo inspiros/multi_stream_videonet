@@ -1,5 +1,6 @@
 from typing import Tuple, Optional, Callable, List, Type, Any, Union
 
+import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.hub import load_state_dict_from_url
@@ -378,3 +379,12 @@ def r2plus1d_18(pretrained: bool = False, progress: bool = True, **kwargs: Any) 
                          conv_makers=[Conv2Plus1D] * 4,
                          layers=[2, 2, 2, 2],
                          stem=R2Plus1dStem, **kwargs)
+
+
+if __name__ == '__main__':
+    model = r2plus1d_18(num_classes=10)
+    print(model)
+
+    inputs = torch.randn(2, 3, 16, 224, 224)
+    output = model(inputs)
+    print(output.shape)

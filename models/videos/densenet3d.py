@@ -88,7 +88,7 @@ class DenseNet(nn.Module):
     """
 
     def __init__(self,
-                 sample_size=224,
+                 sample_size=112,
                  sample_duration=16,
                  growth_rate=32,
                  block_config=(6, 12, 24, 16),
@@ -234,9 +234,8 @@ def densenet3d_264(**kwargs):
 
 if __name__ == "__main__":
     model = densenet3d_21(num_classes=10)
-    model = model.cpu()
     print(model)
 
-    input_var = torch.randn(1, 3, 16, 224, 224)
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)

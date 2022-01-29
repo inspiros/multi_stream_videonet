@@ -80,7 +80,7 @@ class WideResNet(nn.Module):
     def __init__(self,
                  block,
                  layers,
-                 sample_size=224,
+                 sample_size=112,
                  sample_duration=16,
                  k=1,
                  shortcut_type='B',
@@ -212,9 +212,8 @@ def wide_resnet3d_101(**kwargs):
 
 if __name__ == "__main__":
     model = wide_resnet3d_50(num_classes=10)
-    model = model.cpu()
     print(model)
 
-    input_var = torch.randn(1, 3, 16, 224, 224)
+    input_var = torch.randn(1, 3, 16, 112, 112)
     output = model(input_var)
     print(output.shape)
