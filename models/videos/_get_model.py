@@ -1,5 +1,6 @@
 from .c3d import *
 from .densenet3d import *
+from .efficientnet3d import *
 from .mc3d import *
 from .mobilenet3d import *
 from .mobilenet3d_v2 import *
