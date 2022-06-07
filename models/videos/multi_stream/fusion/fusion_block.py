@@ -3,18 +3,20 @@ from typing import List, Optional
 import torch
 import torch.nn as nn
 
-__all__ = ['WeightedFusionBlock']
+__all__ = ['FusionBlock']
 
 
-class WeightedFusionBlock(nn.Module):
+class FusionBlock(nn.Module):
 
     def __init__(self,
                  num_streams: int,
-                 in_channels: Optional[int] = None):
-        super(WeightedFusionBlock, self).__init__()
+                 in_channels: Optional[int] = None,
+                 weighted=True):
+        super(FusionBlock, self).__init__()
         self.num_streams = num_streams
         self.in_channels = in_channels
-        if self.in_channels is not None:
+        self.weighted = weighted and in_channels is not None
+        if self.weighted:
             self.fusion_weights = torch.nn.Parameter(torch.rand(self.num_streams, in_channels))
         else:
             self.register_parameter('fusion_weights', None)

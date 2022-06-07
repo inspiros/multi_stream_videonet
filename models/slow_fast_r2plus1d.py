@@ -5,9 +5,9 @@ import torch.nn as nn
 from torch import Tensor
 from torch.hub import load_state_dict_from_url
 
-from .fusion.slow_fast_lateral_connection import SlowFastLateralConnection
-from .fusion import ConcatenateFusionBlock
-from .parallel_module_list import ParallelModuleList
+from .videos.multi_stream.parallel_module_list import ParallelModuleList
+from .videos.multi_stream.fusion import ConcatenateFusionBlock
+from .videos.multi_stream.fusion.slow_fast_lateral_connection import SlowFastLateralConnection
 
 __all__ = ['SlowFastVideoResNet',
            'slow_fast_r3d_18',

@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 from tqdm import tqdm
 
 from models import DEQBlock, DEQSequential
-from models.parallel_module_list import ParallelModuleList
+from models.videos.multi_stream.parallel_module_list import ParallelModuleList
 import argparse
 
 

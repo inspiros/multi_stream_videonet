@@ -3,7 +3,7 @@ from typing import List
 import torch
 import torch.nn as nn
 
-from .attention import MultiheadAttention, MutualMultiheadAttention
+from .mha import MultiheadAttention, MutualMultiheadAttention
 
 __all__ = [
     'DEQMultiheadAttention',

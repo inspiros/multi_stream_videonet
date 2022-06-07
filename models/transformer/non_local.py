@@ -1,9 +1,15 @@
+import functools
+import math
+import operator
+import sys
 from typing import List, Tuple, Union, Optional
 
 import torch
 from torch import nn
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.utils import _ntuple
+
+from .attention import *
 
 __all__ = ['MultiheadNonlocal1d',
            'MultiheadNonlocal2d',
@@ -56,6 +62,7 @@ def _compute_output_padding(input_shape: Tuple[int, ...],
                  zip(input_shape, output_shape, kernel_size, stride, padding, dilation))
 
 
+# noinspection DuplicatedCode
 class _MultiheadNonlocalNd(nn.Module):
 
     def __init__(self,
@@ -63,12 +70,14 @@ class _MultiheadNonlocalNd(nn.Module):
                  in_channels: int,
                  hidden_channels: Optional[int] = None,
                  num_heads: int = 1,
+                 attn_type: str = 'softmax',
                  kernel_size: Union[int, Tuple[int, ...]] = 1,
                  stride: Union[int, Tuple[int, ...]] = 1,
                  padding: Union[int, Tuple[int, ...]] = 0,
                  dilation: Union[int, Tuple[int, ...]] = 1,
                  scaled: bool = True,
-                 residual: bool = True):
+                 residual: bool = True,
+                 **attn_kwargs):
         super(_MultiheadNonlocalNd, self).__init__()
         _to_tuple = _ntuple(dimension)
         _embed_conv_module = _get_conv_module(dimension)
@@ -78,22 +87,27 @@ class _MultiheadNonlocalNd(nn.Module):
         self.hidden_channels = hidden_channels if hidden_channels is not None else in_channels
         self.num_heads = num_heads
         self.residual = residual
-        self.scale = in_channels ** -0.5 if scaled else 1
+
+        if attn_type == 'none':
+            self.attn = NoneAttention()
+        elif attn_type == 'softmax':
+            self.attn = SoftmaxAttention(scaled=scaled, dim_last=False)
+        elif attn_type == 'nystrom':
+            self.attn = NystromAttention(scaled=scaled, dim_last=False, **attn_kwargs)
+        else:
+            raise ValueError(f'attn_type {attn_type} not supported.')
 
         self.kernel_size = _to_tuple(kernel_size)
         self.stride = _to_tuple(stride)
         self.padding = _to_tuple(padding)
         self.dilation = _to_tuple(dilation)
 
-        self.embed_conv = nn.ModuleList(
-            [_embed_conv_module(in_channels,
-                                self.hidden_channels * 3,
-                                kernel_size=self.kernel_size,
-                                stride=self.stride,
-                                padding=self.padding,
-                                dilation=self.dilation)
-             for _ in range(self.num_heads)]
-        )
+        self.embed_conv = _embed_conv_module(in_channels,
+                                             self.hidden_channels * self.num_heads * 3,
+                                             kernel_size=self.kernel_size,
+                                             stride=self.stride,
+                                             padding=self.padding,
+                                             dilation=self.dilation)
         self.output_conv = _output_conv_module(self.hidden_channels * self.num_heads,
                                                in_channels,
                                                kernel_size=self.kernel_size,
@@ -113,7 +127,7 @@ class _MultiheadNonlocalNd(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch_sz = x.size(0)
+        N, C = x.size()[:2]
         in_dims = x.size()[2:]
         hidden_dims = _compute_conv_output_shape(input_shape=in_dims,
                                                  kernel_size=self.kernel_size,
@@ -121,19 +135,12 @@ class _MultiheadNonlocalNd(nn.Module):
                                                  padding=self.padding,
                                                  dilation=self.dilation)
 
-        qkv = []
-        for head_id in range(self.num_heads):
-            q, k, v = self.embed_conv[head_id](x).flatten(2).chunk(3, dim=1)
-            attn = torch.einsum('bcm,bcn->bmn', q, k).mul(self.scale).softmax(dim=-1)
-            qkv.append(torch.einsum('bmn,bcn->bcm', attn, v))
-            print(head_id, q.shape, attn.shape)
-            # attn = torch.bmm(q.transpose(1, 2), k)
-            # qkv.append(torch.bmm(qk, v.transpose(1, 2)).transpose(1, 2))
-        qkv = torch.cat(qkv, dim=1).view(batch_sz,
-                                         self.hidden_channels * self.num_heads,
-                                         *hidden_dims)
+        embed = self.embed_conv(x).chunk(3, dim=1)
+        q = embed[0].flatten(2).view(N, self.num_heads, self.hidden_channels, -1)
+        k = embed[1].flatten(2).view(N, self.num_heads, self.hidden_channels, -1)
+        v = embed[2].flatten(2).view(N, self.num_heads, self.hidden_channels, -1)
+        qkv = self.attn(q, k, v).view(N, self.num_heads * self.hidden_channels, *hidden_dims)
 
-        print(qkv.shape)
         self.output_conv.output_padding = _compute_output_padding(input_shape=hidden_dims,
                                                                   output_shape=in_dims,
                                                                   kernel_size=self.kernel_size,
@@ -147,77 +154,21 @@ class _MultiheadNonlocalNd(nn.Module):
 
 
 class MultiheadNonlocal1d(_MultiheadNonlocalNd):
-
-    def __init__(self,
-                 in_channels: int,
-                 hidden_channels: Optional[int] = None,
-                 num_heads: int = 1,
-                 kernel_size: Union[int, Tuple[int, ...]] = 1,
-                 stride: Union[int, Tuple[int, ...]] = 1,
-                 padding: Union[int, Tuple[int, ...]] = 0,
-                 dilation: Union[int, Tuple[int, ...]] = 1,
-                 scaled: bool = True,
-                 residual: bool = True):
-        super(MultiheadNonlocal1d, self).__init__(1,
-                                                  in_channels,
-                                                  hidden_channels,
-                                                  num_heads,
-                                                  kernel_size,
-                                                  stride,
-                                                  padding,
-                                                  dilation,
-                                                  scaled,
-                                                  residual)
+    def __init__(self, *args, **kwargs):
+        super(MultiheadNonlocal1d, self).__init__(1, *args, **kwargs)
 
 
 class MultiheadNonlocal2d(_MultiheadNonlocalNd):
-
-    def __init__(self,
-                 in_channels: int,
-                 hidden_channels: Optional[int] = None,
-                 num_heads: int = 1,
-                 kernel_size: Union[int, Tuple[int, ...]] = 1,
-                 stride: Union[int, Tuple[int, ...]] = 1,
-                 padding: Union[int, Tuple[int, ...]] = 0,
-                 dilation: Union[int, Tuple[int, ...]] = 1,
-                 scaled: bool = True,
-                 residual: bool = True):
-        super(MultiheadNonlocal2d, self).__init__(2,
-                                                  in_channels,
-                                                  hidden_channels,
-                                                  num_heads,
-                                                  kernel_size,
-                                                  stride,
-                                                  padding,
-                                                  dilation,
-                                                  scaled,
-                                                  residual)
+    def __init__(self, *args, **kwargs):
+        super(MultiheadNonlocal2d, self).__init__(2, *args, **kwargs)
 
 
 class MultiheadNonlocal3d(_MultiheadNonlocalNd):
-
-    def __init__(self,
-                 in_channels: int,
-                 hidden_channels: Optional[int] = None,
-                 num_heads: int = 1,
-                 kernel_size: Union[int, Tuple[int, ...]] = 1,
-                 stride: Union[int, Tuple[int, ...]] = 1,
-                 padding: Union[int, Tuple[int, ...]] = 0,
-                 dilation: Union[int, Tuple[int, ...]] = 1,
-                 scaled: bool = True,
-                 residual: bool = True):
-        super(MultiheadNonlocal3d, self).__init__(3,
-                                                  in_channels,
-                                                  hidden_channels,
-                                                  num_heads,
-                                                  kernel_size,
-                                                  stride,
-                                                  padding,
-                                                  dilation,
-                                                  scaled,
-                                                  residual)
+    def __init__(self, *args, **kwargs):
+        super(MultiheadNonlocal3d, self).__init__(3, *args, **kwargs)
 
 
+# noinspection DuplicatedCode
 class _MutualMultiheadNonlocalNd(nn.Module):
 
     def __init__(self,
@@ -226,12 +177,14 @@ class _MutualMultiheadNonlocalNd(nn.Module):
                  in_channels: int,
                  hidden_channels: Optional[int] = None,
                  num_heads: int = 1,
+                 attn_type: str = 'softmax',
                  kernel_size: Union[int, Tuple[int, ...]] = 1,
                  stride: Union[int, Tuple[int, ...]] = 1,
                  padding: Union[int, Tuple[int, ...]] = 0,
                  dilation: Union[int, Tuple[int, ...]] = 1,
                  scaled: bool = True,
-                 residual: bool = True):
+                 residual: bool = True,
+                 **attn_kwargs):
         super(_MutualMultiheadNonlocalNd, self).__init__()
         if num_streams < 2:
             raise ValueError(f'num_streams must be greater or equal to 2. Got {num_streams}.')
@@ -244,22 +197,30 @@ class _MutualMultiheadNonlocalNd(nn.Module):
         self.num_streams = num_streams
         self.num_heads = num_heads
         self.residual = residual
-        self.scale = in_channels ** -0.5 if scaled else 1
+
+        if attn_type == 'none':
+            self.attn = NoneAttention()
+        elif attn_type == 'softmax':
+            self.attn = SoftmaxAttention(scaled=scaled, dim_last=False)
+        elif attn_type == 'nystrom':
+            self.attn = NystromAttention(scaled=scaled, dim_last=False, **attn_kwargs)
+        else:
+            raise ValueError(f'attn_type {attn_type} not supported.')
 
         self.kernel_size = _to_tuple(kernel_size)
         self.stride = _to_tuple(stride)
         self.padding = _to_tuple(padding)
         self.dilation = _to_tuple(dilation)
 
-        self.embed_conv = nn.ModuleList(
-            [_embed_conv_module(in_channels,
-                                self.hidden_channels * 3,
-                                kernel_size=self.kernel_size,
-                                stride=self.stride,
-                                padding=self.padding,
-                                dilation=self.dilation)
-             for _ in range(self.num_streams)]
-        )
+        self.embed_conv = nn.ModuleList([
+            _embed_conv_module(in_channels,
+                               self.hidden_channels * self.num_heads * 3,
+                               kernel_size=self.kernel_size,
+                               stride=self.stride,
+                               padding=self.padding,
+                               dilation=self.dilation)
+            for _ in range(self.num_streams)
+        ])
         self.output_conv = nn.ModuleList(
             [_output_conv_module(self.hidden_channels * self.num_heads,
                                  in_channels,
@@ -290,41 +251,28 @@ class _MutualMultiheadNonlocalNd(nn.Module):
                    for stream_id in range(1, self.num_streams)):
             raise ValueError(f'Different dimensions of streams are not supported; '
                              f'got {in_dims_list}.')
+        N, C = in_dims_list[0][:2]
+        in_dims = in_dims_list[0][2:]
+        hidden_dims = _compute_conv_output_shape(input_shape=in_dims,
+                                                 kernel_size=self.kernel_size,
+                                                 stride=self.stride,
+                                                 padding=self.padding,
+                                                 dilation=self.dilation)
 
         qs, ks, vs = [], [], []
         for stream_id in range(self.num_streams):
-            q_i, k_i, v_i = [], [], []
-            for head_id in range(self.num_heads):
-                q, k, v = self.embed_conv[stream_id](xs[stream_id]).flatten(2).chunk(3, dim=1)
-                q_i.append(q)
-                k_i.append(k)
-                v_i.append(v)
-            qs.append(q_i)
-            ks.append(k_i)
-            vs.append(v_i)
+            embed = self.embed_conv[stream_id](xs[stream_id]).chunk(3, dim=1)
+            qs.append(embed[0].flatten(2).view(N, self.num_heads, self.hidden_channels, -1))
+            ks.append(embed[1].flatten(2).view(N, self.num_heads, self.hidden_channels, -1))
+            vs.append(embed[2].flatten(2).view(N, self.num_heads, self.hidden_channels, -1))
 
         outs = []
         for stream_id in range(self.num_streams):
-            qkv = []
-            for head_id in range(self.num_heads):
-                q = sum(qs[other_stream_id][head_id] for other_stream_id in range(self.num_streams)
-                        if other_stream_id != stream_id)
-                k = ks[stream_id][head_id]
-                v = vs[stream_id][head_id]
-                attn = torch.einsum('bcm,bcn->bmn', q, k).mul(self.scale).softmax(dim=-1)
-                qkv.append(torch.einsum('bmn,bcn->bcm', attn, v))
-
-            batch_sz = in_dims_list[stream_id][0]
-            in_dims = in_dims_list[stream_id][2:]
-            hidden_dims = _compute_conv_output_shape(input_shape=in_dims,
-                                                     kernel_size=self.kernel_size,
-                                                     stride=self.stride,
-                                                     padding=self.padding,
-                                                     dilation=self.dilation)
-
-            qkv = torch.cat(qkv, dim=1).view(batch_sz,
-                                             self.hidden_channels * self.num_heads,
-                                             *hidden_dims)
+            q = sum(qs[other_stream_id] for other_stream_id in range(self.num_streams)
+                    if other_stream_id != stream_id)
+            k = ks[stream_id]
+            v = vs[stream_id]
+            qkv = self.attn(q, k, v).view(N, self.num_heads * self.hidden_channels, *hidden_dims)
 
             self.output_conv[stream_id].output_padding = _compute_output_padding(input_shape=hidden_dims,
                                                                                  output_shape=in_dims,
@@ -340,78 +288,15 @@ class _MutualMultiheadNonlocalNd(nn.Module):
 
 
 class MutualMultiheadNonlocal1d(_MutualMultiheadNonlocalNd):
-
-    def __init__(self,
-                 num_streams: int,
-                 in_channels: int,
-                 hidden_channels: Optional[int] = None,
-                 num_heads: int = 1,
-                 kernel_size: Union[int, Tuple[int, ...]] = 1,
-                 stride: Union[int, Tuple[int, ...]] = 1,
-                 padding: Union[int, Tuple[int, ...]] = 0,
-                 dilation: Union[int, Tuple[int, ...]] = 1,
-                 scaled: bool = True,
-                 residual: bool = True):
-        super(MutualMultiheadNonlocal1d, self).__init__(1,
-                                                        num_streams,
-                                                        in_channels,
-                                                        hidden_channels,
-                                                        num_heads,
-                                                        kernel_size,
-                                                        stride,
-                                                        padding,
-                                                        dilation,
-                                                        scaled,
-                                                        residual)
+    def __init__(self, *args, **kwargs):
+        super(MutualMultiheadNonlocal1d, self).__init__(1, *args, **kwargs)
 
 
 class MutualMultiheadNonlocal2d(_MutualMultiheadNonlocalNd):
-
-    def __init__(self,
-                 num_streams: int,
-                 in_channels: int,
-                 hidden_channels: Optional[int] = None,
-                 num_heads: int = 1,
-                 kernel_size: Union[int, Tuple[int, ...]] = 1,
-                 stride: Union[int, Tuple[int, ...]] = 1,
-                 padding: Union[int, Tuple[int, ...]] = 0,
-                 dilation: Union[int, Tuple[int, ...]] = 1,
-                 scaled: bool = True,
-                 residual: bool = True):
-        super(MutualMultiheadNonlocal2d, self).__init__(2,
-                                                        num_streams,
-                                                        in_channels,
-                                                        hidden_channels,
-                                                        num_heads,
-                                                        kernel_size,
-                                                        stride,
-                                                        padding,
-                                                        dilation,
-                                                        scaled,
-                                                        residual)
+    def __init__(self, *args, **kwargs):
+        super(MutualMultiheadNonlocal2d, self).__init__(2, *args, **kwargs)
 
 
 class MutualMultiheadNonlocal3d(_MutualMultiheadNonlocalNd):
-
-    def __init__(self,
-                 num_streams: int,
-                 in_channels: int,
-                 hidden_channels: Optional[int] = None,
-                 num_heads: int = 1,
-                 kernel_size: Union[int, Tuple[int, ...]] = 1,
-                 stride: Union[int, Tuple[int, ...]] = 1,
-                 padding: Union[int, Tuple[int, ...]] = 0,
-                 dilation: Union[int, Tuple[int, ...]] = 1,
-                 scaled: bool = True,
-                 residual: bool = True):
-        super(MutualMultiheadNonlocal3d, self).__init__(3,
-                                                        num_streams,
-                                                        in_channels,
-                                                        hidden_channels,
-                                                        num_heads,
-                                                        kernel_size,
-                                                        stride,
-                                                        padding,
-                                                        dilation,
-                                                        scaled,
-                                                        residual)
+    def __init__(self, *args, **kwargs):
+        super(MutualMultiheadNonlocal3d, self).__init__(3, *args, **kwargs)

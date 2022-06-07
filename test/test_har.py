@@ -1,10 +1,9 @@
-import torch
 import torch.nn as nn
 from datasets import loso_har_feature
-from models.parallel_module_list import ParallelModuleList
+from models.videos.multi_stream.parallel_module_list import ParallelModuleList
 from models.transformer import MutualMultiheadAttention, DEQMutualMultiheadAttention
-from models.fusion import FusionBlock
-from models.deq import DEQBlock, DEQSequential
+from models.videos.multi_stream.fusion import FusionBlock
+from models.deq import DEQBlock
 
 
 class MultistreamDataset(nn.Module):

@@ -2,6 +2,11 @@ from typing import List, Iterable, Optional
 
 import torch
 
+__all__ = [
+    'ParallelModuleList',
+    'ForkModuleList',
+]
+
 
 class ParallelModuleList(torch.nn.ModuleList):
 

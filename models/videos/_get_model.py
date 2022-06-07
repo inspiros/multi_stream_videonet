@@ -4,6 +4,7 @@ from .efficientnet3d import *
 from .mc3d import *
 from .mobilenet3d import *
 from .mobilenet3d_v2 import *
+from .movinet import *
 from .r2plus1d import *
 from .r3d import *
 from .resnext3d import *
