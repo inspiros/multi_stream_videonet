@@ -1,3 +1,3 @@
 # Code for AFORS2022
 
-![alt text](images/winuni.png)
+![WinUniversity+](images/winuni.png "VinUni bán lại cho Masan đổi tên thành WinUni+")
