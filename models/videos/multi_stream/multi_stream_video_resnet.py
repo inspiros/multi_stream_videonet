@@ -4,15 +4,18 @@ import torch.nn as nn
 from torch import Tensor
 from torch.hub import load_state_dict_from_url
 
-from .r2plus1d import Conv3DSimple, Conv2Plus1D, Conv3DNoTemporal, BasicBlock, Bottleneck, BasicStem, R2Plus1dStem
-from .transformer import MutualMultiheadNonlocal3d
-from .videos.multi_stream.fusion import FusionBlock
-from .videos.multi_stream.parallel_module_list import ParallelModuleList
+from .multi_stream_model import MultiStreamVideoModel
+from ..video_resnet import (
+    Conv3DSimple, Conv2Plus1D, Conv3DNoTemporal,
+    BasicBlock, Bottleneck, BasicStem, R2Plus1dStem
+)
 
-__all__ = ['MultiStreamVideoResNet',
-           'multi_stream_r3d_18',
-           'multi_stream_mc3_18',
-           'multi_stream_r2plus1d_18']
+__all__ = [
+    'MultiStreamVideoResNet',
+    'multi_stream_r3d_18',
+    'multi_stream_mc3_18',
+    'multi_stream_r2plus1d_18'
+]
 
 model_urls = {
     'r3d_18': 'https://download.pytorch.org/models/r3d_18-b3b3357e.pth',
@@ -21,7 +24,8 @@ model_urls = {
 }
 
 
-class MultiStreamVideoResNet(nn.Module):
+# noinspection DuplicatedCode
+class MultiStreamVideoResNet(MultiStreamVideoModel):
 
     def __init__(
             self,
@@ -31,11 +35,11 @@ class MultiStreamVideoResNet(nn.Module):
             stem: Callable[..., nn.Module],
             num_classes: int = 400,
             num_streams: int = 1,
-            fusion_weights: bool = True,
+            weighted_fusion: bool = True,
             fusion_stage: int = 6,
             transfer_stages: List[int] = tuple(),
             zero_init_residual: bool = False,
-    ) -> None:
+    ):
         """Multi-stream Version of Generic resnet video generator.
         Args:
             block (Type[Union[BasicBlock, Bottleneck]]): resnet building block
@@ -45,116 +49,65 @@ class MultiStreamVideoResNet(nn.Module):
             stem (Callable[..., nn.Module]): module specifying the ResNet stem.
             num_classes (int, optional): Dimension of the final FC layer. Defaults to 400.
             num_streams (int, optional): Number of input streams. Defaults to 1.
-            fusion_weights (bool, optional): Apply learnable fusion weights. Defaults to True.
+            weighted_fusion (bool, optional): Apply learnable fusion weights. Defaults to True.
             fusion_stage (int, optional): Stage of fusion.
             zero_init_residual (bool, optional): Zero init bottleneck residual BN. Defaults to False.
         """
-        super(MultiStreamVideoResNet, self).__init__()
-        if fusion_stage > 6:
-            raise ValueError(f'fusion_stage must be either 0 (after stem), 1 (after layer1), '
-                             f'2 (after layer2), 3 (after layer3), 4 (after layer4), '
-                             f'5 (after average pooling), or 6 (after fc/logit fusion). '
-                             f'Got fusion_stage={fusion_stage}.')
-        if any(transfer_stage > fusion_stage for transfer_stage in transfer_stages):
-            raise ValueError(f'transfer_stages must be less or equal to fusion_stage={fusion_stage}. '
-                             f'Got transfer_stages={transfer_stages}.')
-        if any(transfer_stage >= 5 for transfer_stage in transfer_stages):
-            raise ValueError(f'transfer_stages 5 and 6 (vector features) are currently not supported. '
-                             f'Got transfer_stages={transfer_stages}.')
+        super(MultiStreamVideoResNet, self).__init__(num_streams)
 
         self.inplanes = 64
-        self.num_streams = num_streams
         self.fusion_stage = fusion_stage
+        self.weighted_fusion = weighted_fusion
         self.transfer_stages = transfer_stages
 
         # stem
-        self.stem = ParallelModuleList([stem() for _ in range(self.num_streams)])
+        self.stem = self._make_multi_stream_block(
+            stem(),
+            out_channels=64,
+        )
 
         # layer1
-        if self.fusion_stage >= 1:
-            self.layer1 = ParallelModuleList(
-                [self._make_layer(block, conv_makers[0], 64, layers[0], stride=1)
-                 for _ in range(self.num_streams)]
-            )
-        else:
-            self.layer1 = self._make_layer(block, conv_makers[0], 64, layers[0], stride=1)
+        self.layer1 = self._make_multi_stream_block(
+            self._make_layer(block, conv_makers[0], 64, layers[0], stride=1),
+            out_channels=64,
+        )
 
         # layer2
-        if self.fusion_stage >= 2:
-            self.layer2 = ParallelModuleList(
-                [self._make_layer(block, conv_makers[1], 128, layers[1], stride=2)
-                 for _ in range(self.num_streams)]
-            )
-        else:
-            self.layer2 = self._make_layer(block, conv_makers[1], 128, layers[1], stride=2)
+        self.layer2 = self._make_multi_stream_block(
+            self._make_layer(block, conv_makers[1], 128, layers[1], stride=2),
+            out_channels=128,
+        )
 
         # layer3
-        if self.fusion_stage >= 3:
-            self.layer3 = ParallelModuleList(
-                [self._make_layer(block, conv_makers[2], 256, layers[2], stride=2)
-                 for _ in range(self.num_streams)]
-            )
-        else:
-            self.layer3 = self._make_layer(block, conv_makers[2], 256, layers[2], stride=2)
+        self.layer3 = self._make_multi_stream_block(
+            self._make_layer(block, conv_makers[2], 256, layers[2], stride=2),
+            out_channels=256,
+        )
 
         # layer4
-        if self.fusion_stage >= 4:
-            self.layer4 = ParallelModuleList(
-                [self._make_layer(block, conv_makers[3], 512, layers[3], stride=2)
-                 for _ in range(self.num_streams)]
-            )
-        else:
-            self.layer4 = self._make_layer(block, conv_makers[3], 512, layers[3], stride=2)
+        self.layer4 = self._make_multi_stream_block(
+            self._make_layer(block, conv_makers[3], 512, layers[3], stride=2),
+            out_channels=512,
+        )
 
         # global avarage pooling
-        if self.fusion_stage >= 5:
-            self.avgpool = ParallelModuleList(
-                [nn.Sequential(nn.AdaptiveAvgPool3d((1, 1, 1)),
-                               nn.Flatten())
-                 for _ in range(self.num_streams)])
-        else:
-            self.avgpool = nn.Sequential(nn.AdaptiveAvgPool3d((1, 1, 1)),
-                                         nn.Flatten())
+        self.avgpool = self._make_multi_stream_block(
+            nn.Sequential(nn.AdaptiveAvgPool3d((1, 1, 1)), nn.Flatten()),
+            out_channels=512,
+            no_transfer=True,
+        )
 
         # fc
-        if self.fusion_stage >= 6:
-            self.fc = ParallelModuleList(
-                [nn.Linear(512 * block.expansion, num_classes)
-                 for _ in range(self.num_streams)]
-            )
-        else:
-            self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc = self._make_multi_stream_block(
+            nn.Linear(512 * block.expansion, num_classes),
+            out_channels=num_classes,
+            no_transfer=True,
+        )
 
-        # fuse and transfer
-        stage_channels = {
-            0: 64,
-            1: 64,
-            2: 128,
-            3: 256,
-            4: 512,
-            5: 512,
-            6: num_classes
-        }
-        self.transfer = nn.ModuleList([nn.Identity()] * 7)
-        for transfer_stage in self.transfer_stages:
-            self.transfer[transfer_stage] = \
-                MutualMultiheadNonlocal3d(num_streams=self.num_streams,
-                                          in_channels=stage_channels[transfer_stage],
-                                          hidden_channels=stage_channels[transfer_stage] // 4,
-                                          attn_type='nystrom',
-                                          p_landmark=1/4)
-        self.fuse = nn.ModuleList([nn.Identity()] * 7)
-        self.fuse[self.fusion_stage] = \
-            FusionBlock(num_streams=self.num_streams,
-                        in_channels=stage_channels[self.fusion_stage] if fusion_weights else None)
+        self._check_stages()
 
         # init weights
-        self._initialize_weights()
-
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
+        self._initialize_weights(zero_init_residual)
 
     def _make_layer(
             self,
@@ -181,7 +134,7 @@ class MultiStreamVideoResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def _initialize_weights(self) -> None:
+    def _initialize_weights(self, zero_init_residual):
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out',
@@ -195,34 +148,21 @@ class MultiStreamVideoResNet(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, Bottleneck):
+                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
+
     def forward(self, x: List[Tensor]) -> Tensor:
         x = self.stem(x)
-        x = self.transfer[0](x)
-        x = self.fuse[0](x)
 
         x = self.layer1(x)
-        x = self.transfer[1](x)
-        x = self.fuse[1](x)
-
         x = self.layer2(x)
-        x = self.transfer[2](x)
-        x = self.fuse[2](x)
-
         x = self.layer3(x)
-        x = self.transfer[3](x)
-        x = self.fuse[3](x)
-
         x = self.layer4(x)
-        x = self.transfer[4](x)
-        x = self.fuse[4](x)
 
         x = self.avgpool(x)
-        x = self.transfer[5](x)
-        x = self.fuse[5](x)
-
         x = self.fc(x)
-        x = self.transfer[6](x)
-        x = self.fuse[6](x)
 
         return x
 

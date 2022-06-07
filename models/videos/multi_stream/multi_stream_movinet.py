@@ -1,18 +1,14 @@
 from collections import OrderedDict
 from typing import List
 
-import torch
-import torch.nn.functional as F
 from torch import nn, Tensor
 
-from .parallel_module_list import ParallelModuleList
+from .multi_stream_model import MultiStreamVideoModel
 from .._movinet_configs import *
 from ..movinet import (
     Swish, CausalModule, TemporalAverage,
     ConvBlock3D, BasicBottleneck
 )
-from .fusion import FusionBlock
-from ...transformer import MutualMultiheadNonlocal3d
 
 __all__ = [
     'multi_stream_movinet_a0',
@@ -24,7 +20,8 @@ __all__ = [
 ]
 
 
-class MultiStreamMoViNet(nn.Module):
+# noinspection DuplicatedCode
+class MultiStreamMoViNet(MultiStreamVideoModel):
     def __init__(self,
                  cfg: 'MoViNetConfigNode',
                  causal: bool = True,
@@ -37,7 +34,7 @@ class MultiStreamMoViNet(nn.Module):
                  conv_type: str = '3d',
                  tf_like: bool = False
                  ) -> None:
-        super().__init__()
+        super(MultiStreamMoViNet, self).__init__(num_streams)
         """
         causal: causal mode
         pretrained: pretrained models
@@ -64,7 +61,6 @@ class MultiStreamMoViNet(nn.Module):
         self.transfer_stages = transfer_stages
         self.causal = causal
 
-        current_stage = 0
         # conv1
         self.conv1 = self._make_multi_stream_block(
             ConvBlock3D(
@@ -79,10 +75,8 @@ class MultiStreamMoViNet(nn.Module):
                 norm_layer=norm_layer,
                 activation_layer=activation_layer
             ),
-            stage=current_stage,
             out_channels=cfg.conv1.out_channels,
         )
-        current_stage += 1
 
         # blocks
         blocks_dict = OrderedDict()
@@ -98,17 +92,15 @@ class MultiStreamMoViNet(nn.Module):
                         norm_layer=norm_layer,
                         activation_layer=activation_layer
                     ),
-                    stage=current_stage,
                     no_transfer=True,
                     no_fusion=True,
+                    keep_stage=True,
                 )
             blocks_dict[f'b{i}'] = self._make_multi_stream_block(
                 nn.Sequential(blocks_dict_i),
-                stage=current_stage,
                 out_channels=block[-1].out_channels,
                 no_multi_stream=True,
             )
-            current_stage += 1
         self.blocks = nn.Sequential(blocks_dict)
 
         # conv7
@@ -125,19 +117,15 @@ class MultiStreamMoViNet(nn.Module):
                 norm_layer=norm_layer,
                 activation_layer=activation_layer
             ),
-            stage=current_stage,
             out_channels=cfg.conv7.out_channels,
         )
-        current_stage += 1
 
         # pool
         self.avg = self._make_multi_stream_block(
             TemporalAverage(self.causal),
-            stage=current_stage,
             out_channels=cfg.conv7.out_channels,
             no_transfer=True,
         )
-        current_stage += 1
 
         # clf
         self.classifier = self._make_multi_stream_block(
@@ -161,50 +149,17 @@ class MultiStreamMoViNet(nn.Module):
                             conv_type=conv_type,
                             bias=True),
             ),
-            stage=current_stage,
+            out_channels=num_classes,
             no_transfer=True,
         )
-        current_stage += 1
 
-        self._check_stages(current_stage)
+        self._check_stages()
 
         # load pre-trained model
         if pretrained:
             raise NotImplementedError
         else:
             self.apply(self._initialize_weights)
-
-    def _check_stages(self, final_stage):
-        assert 0 <= self.fusion_stage < final_stage
-        assert all(0 <= _ < final_stage for _ in self.transfer_stages)
-
-    def _make_multi_stream_block(self,
-                                 module,
-                                 stage=None,
-                                 out_channels=None,
-                                 no_multi_stream=False,
-                                 no_transfer=False,
-                                 no_fusion=False):
-        multi_stream = stage <= self.fusion_stage and not no_multi_stream
-        transfer = stage in self.transfer_stages and not no_transfer
-        fusion = stage == self.fusion_stage and not no_fusion
-
-        layers = OrderedDict(
-            module=ParallelModuleList([module] * self.num_streams) if multi_stream else module,
-            transfer=MutualMultiheadNonlocal3d(num_streams=self.num_streams,
-                                               in_channels=out_channels,
-                                               hidden_channels=out_channels // 4,
-                                               attn_type='nystrom',
-                                               p_landmark=1/16)
-            if transfer and out_channels is not None else nn.Identity(),
-            fusion=FusionBlock(num_streams=self.num_streams,
-                               in_channels=out_channels,
-                               weighted=self.weighted_fusion)
-            if fusion else nn.Identity(),
-        )
-        m = nn.Sequential(layers)
-        m.stage = stage
-        return m
 
     @staticmethod
     def _initialize_weights(m):

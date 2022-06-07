@@ -1,4 +1,5 @@
 from .multi_stream_movinet import *
+from .multi_stream_video_resnet import *
 
 __all__ = ['get_arch', 'get_model']
 

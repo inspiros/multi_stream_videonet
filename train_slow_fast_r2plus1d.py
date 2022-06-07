@@ -3,18 +3,18 @@ import os
 import time
 
 import albumentations as A
-from cv2 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from cv2 import cv2
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from models import slow_fast_r1plus2d_18
+from models.videos.slow_fast_r2plus1d import slow_fast_r1plus2d_18
 
 # Arguments
 ap = argparse.ArgumentParser()

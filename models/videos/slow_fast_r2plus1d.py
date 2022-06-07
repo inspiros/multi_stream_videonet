@@ -5,15 +5,17 @@ import torch.nn as nn
 from torch import Tensor
 from torch.hub import load_state_dict_from_url
 
-from .videos.multi_stream.parallel_module_list import ParallelModuleList
-from .videos.multi_stream.fusion import ConcatenateFusionBlock
-from .videos.multi_stream.fusion.slow_fast_lateral_connection import SlowFastLateralConnection
+from .multi_stream.fusion import ConcatenateFusionBlock
+from .multi_stream.fusion.slow_fast_lateral_connection import SlowFastLateralConnection
+from .multi_stream.parallel_modules import ParallelModuleList
 
-__all__ = ['SlowFastVideoResNet',
-           'slow_fast_r3d_18',
-           'slow_fast_mc3_18',
-           'slow_fast_r2plus1d_18',
-           'slow_fast_r1plus2d_18']
+__all__ = [
+    'SlowFastVideoResNet',
+    'slow_fast_r3d_18',
+    'slow_fast_mc3_18',
+    'slow_fast_r2plus1d_18',
+    'slow_fast_r1plus2d_18'
+]
 
 model_urls = {
     'r3d_18': 'https://download.pytorch.org/models/r3d_18-b3b3357e.pth',
@@ -31,7 +33,7 @@ class NonDegenerateTemporalConv3DSimple(nn.Conv3d):
             stride: int = 1,
             padding: int = 1,
             no_temporal: bool = False
-    ) -> None:
+    ):
         super(NonDegenerateTemporalConv3DSimple, self).__init__(
             in_channels=in_planes,
             out_channels=out_planes,
@@ -55,7 +57,7 @@ class NonDegenerateTemporalConv2Plus1D(nn.Sequential):
             stride: int = 1,
             padding: int = 1,
             no_temporal: bool = False
-    ) -> None:
+    ):
         super(NonDegenerateTemporalConv2Plus1D, self).__init__(
             nn.Conv3d(in_planes, midplanes, kernel_size=(1, 3, 3),
                       stride=(1, stride, stride), padding=(0, padding, padding),
@@ -81,7 +83,7 @@ class NonDegenerateTemporalConv1Plus2D(nn.Sequential):
             stride: int = 1,
             padding: int = 1,
             no_temporal: bool = False
-    ) -> None:
+    ):
         super(NonDegenerateTemporalConv1Plus2D, self).__init__(
             nn.Conv3d(in_planes, midplanes, kernel_size=(1 if no_temporal else 3, 1, 1),
                       stride=(1, 1, 1), padding=(0 if no_temporal else 1, 0, 0),
@@ -107,7 +109,7 @@ class Conv3DNoTemporal(nn.Conv3d):
             stride: int = 1,
             padding: int = 1,
             no_temporal: bool = False
-    ) -> None:
+    ):
         super(Conv3DNoTemporal, self).__init__(
             in_channels=in_planes,
             out_channels=out_planes,
@@ -132,7 +134,7 @@ class BasicBlock(nn.Module):
             stride: int = 1,
             downsample: Optional[nn.Module] = None,
             no_temporal: bool = False
-    ) -> None:
+    ):
         midplanes = (inplanes * planes * 3 * 3 * 3) // (inplanes * 3 * 3 + 3 * planes)
 
         super(BasicBlock, self).__init__()
@@ -174,7 +176,7 @@ class Bottleneck(nn.Module):
             stride: int = 1,
             downsample: Optional[nn.Module] = None,
             no_temporal: bool = False
-    ) -> None:
+    ):
         super(Bottleneck, self).__init__()
         midplanes = (inplanes * planes * 3 * 3 * 3) // (inplanes * 3 * 3 + 3 * planes)
 
@@ -222,7 +224,7 @@ class BasicStem(nn.Sequential):
 
     def __init__(self,
                  planes: int = 64,
-                 no_temporal: bool = False) -> None:
+                 no_temporal: bool = False):
         super(BasicStem, self).__init__(
             nn.Conv3d(3, planes, kernel_size=(1 if no_temporal else 3, 7, 7),
                       stride=(1, 2, 2), padding=(0 if no_temporal else 1, 3, 3),
@@ -237,7 +239,7 @@ class R2Plus1dStem(nn.Sequential):
 
     def __init__(self,
                  planes: int = 64,
-                 no_temporal: bool = False) -> None:
+                 no_temporal: bool = False):
         super(R2Plus1dStem, self).__init__(
             nn.Conv3d(3, 45, kernel_size=(1, 7, 7),
                       stride=(1, 2, 2), padding=(0, 3, 3),
@@ -257,7 +259,7 @@ class R1Plus2dStem(nn.Sequential):
 
     def __init__(self,
                  planes: int = 64,
-                 no_temporal: bool = False) -> None:
+                 no_temporal: bool = False):
         super(R1Plus2dStem, self).__init__(
             nn.Conv3d(3, 45, kernel_size=(1 if no_temporal else 3, 1, 1),
                       stride=(1, 1, 1), padding=(0 if no_temporal else 1, 0, 0),
@@ -290,7 +292,7 @@ class SlowFastVideoResNet(nn.Module):
             alpha: int = 4,
             beta: int = 8,
             order: str = 'slow_fast'
-    ) -> None:
+    ):
         """SlowFast resnet video generator.
         Args:
             block (Type[Union[BasicBlock, Bottleneck]]): resnet building block
@@ -364,12 +366,7 @@ class SlowFastVideoResNet(nn.Module):
         self.fc = nn.Linear((512 + 512 // beta) * block.expansion, num_classes)
 
         # init weights
-        self._initialize_weights()
-
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
+        self._initialize_weights(zero_init_residual)
 
     def forward(self, x: Tensor) -> Tensor:
         x_fast = x
@@ -432,7 +429,7 @@ class SlowFastVideoResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def _initialize_weights(self) -> None:
+    def _initialize_weights(self, zero_init_residual):
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out',
@@ -445,6 +442,11 @@ class SlowFastVideoResNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
+
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, Bottleneck):
+                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
 
 
 def _slow_fast_video_resnet(arch: str, pretrained: bool = False, progress: bool = True,

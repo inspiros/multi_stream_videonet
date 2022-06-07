@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from models import multi_stream_r2plus1d_18
+from models.videos.multi_stream.multi_stream_video_resnet import multi_stream_r2plus1d_18
 
 # Arguments
 ap = argparse.ArgumentParser()

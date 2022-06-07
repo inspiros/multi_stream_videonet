@@ -1,7 +1,7 @@
 import time
 import torch
 
-from models import slow_fast_r2plus1d_18
+from models.videos.slow_fast_r2plus1d import slow_fast_r2plus1d_18
 
 
 def main():

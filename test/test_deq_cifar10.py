@@ -6,8 +6,8 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
-from models import DEQBlock, DEQSequential
-from models.videos.multi_stream.parallel_module_list import ParallelModuleList
+from models import DEQBlock
+from models.videos.multi_stream.parallel_modules import ParallelModuleList
 import argparse
 
 

@@ -5,10 +5,12 @@ import torch.nn as nn
 from torch import Tensor
 from torch.hub import load_state_dict_from_url
 
-__all__ = ['VideoResNet',
-           'r3d_18',
-           'mc3_18',
-           'r2plus1d_18']
+__all__ = [
+    'VideoResNet',
+    'r3d_18',
+    'mc3_18',
+    'r2plus1d_18'
+]
 
 model_urls = {
     'r3d_18': 'https://download.pytorch.org/models/r3d_18-b3b3357e.pth',
@@ -25,7 +27,7 @@ class Conv3DSimple(nn.Conv3d):
             midplanes: Optional[int] = None,
             stride: int = 1,
             padding: int = 1
-    ) -> None:
+    ):
         super(Conv3DSimple, self).__init__(
             in_channels=in_planes,
             out_channels=out_planes,
@@ -48,7 +50,7 @@ class Conv2Plus1D(nn.Sequential):
             midplanes: int,
             stride: int = 1,
             padding: int = 1
-    ) -> None:
+    ):
         super(Conv2Plus1D, self).__init__(
             nn.Conv3d(in_planes, midplanes, kernel_size=(1, 3, 3),
                       stride=(1, stride, stride), padding=(0, padding, padding),
@@ -73,7 +75,7 @@ class Conv3DNoTemporal(nn.Conv3d):
             mid_planes: Optional[int] = None,
             stride: int = 1,
             padding: int = 1
-    ) -> None:
+    ):
         super(Conv3DNoTemporal, self).__init__(
             in_channels=in_planes,
             out_channels=out_planes,
@@ -97,7 +99,7 @@ class BasicBlock(nn.Module):
             conv_builder: Callable[..., nn.Module],
             stride: int = 1,
             downsample: Optional[nn.Module] = None,
-    ) -> None:
+    ):
         midplanes = (inplanes * planes * 3 * 3 * 3) // (inplanes * 3 * 3 + 3 * planes)
 
         super(BasicBlock, self).__init__()
@@ -138,7 +140,7 @@ class Bottleneck(nn.Module):
             conv_builder: Callable[..., nn.Module],
             stride: int = 1,
             downsample: Optional[nn.Module] = None,
-    ) -> None:
+    ):
         super(Bottleneck, self).__init__()
         midplanes = (inplanes * planes * 3 * 3 * 3) // (inplanes * 3 * 3 + 3 * planes)
 
@@ -184,7 +186,7 @@ class BasicStem(nn.Sequential):
     """The default conv-batchnorm-relu stem
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         super(BasicStem, self).__init__(
             nn.Conv3d(3, 64, kernel_size=(3, 7, 7), stride=(1, 2, 2),
                       padding=(1, 3, 3), bias=False),
@@ -196,7 +198,7 @@ class R2Plus1dStem(nn.Sequential):
     """R(2+1)D stem is different than the default one as it uses separated 3D convolution
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         super(R2Plus1dStem, self).__init__(
             nn.Conv3d(3, 45, kernel_size=(1, 7, 7),
                       stride=(1, 2, 2), padding=(0, 3, 3),
@@ -220,7 +222,7 @@ class VideoResNet(nn.Module):
             stem: Callable[..., nn.Module],
             num_classes: int = 400,
             zero_init_residual: bool = False,
-    ) -> None:
+    ):
         """Generic resnet video generator.
         Args:
             block (Type[Union[BasicBlock, Bottleneck]]): resnet building block
@@ -245,12 +247,7 @@ class VideoResNet(nn.Module):
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         # init weights
-        self._initialize_weights()
-
-        if zero_init_residual:
-            for m in self.modules():
-                if isinstance(m, Bottleneck):
-                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
+        self._initialize_weights(zero_init_residual)
 
     def forward(self, x: Tensor) -> Tensor:
         x = self.stem(x)
@@ -290,7 +287,7 @@ class VideoResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def _initialize_weights(self) -> None:
+    def _initialize_weights(self, zero_init_residual):
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out',
@@ -303,6 +300,11 @@ class VideoResNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
+
+        if zero_init_residual:
+            for m in self.modules():
+                if isinstance(m, Bottleneck):
+                    nn.init.constant_(m.bn3.weight, 0)  # type: ignore[union-attr, arg-type]
 
     def load_state_dict(self, state_dict, strict=False):
         current_state_dict = self.state_dict()

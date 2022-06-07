@@ -134,6 +134,12 @@ class _MultiheadNonlocalNd(nn.Module):
                                                  stride=self.stride,
                                                  padding=self.padding,
                                                  dilation=self.dilation)
+        self.output_conv.output_padding = _compute_output_padding(input_shape=hidden_dims,
+                                                                  output_shape=in_dims,
+                                                                  kernel_size=self.kernel_size,
+                                                                  stride=self.stride,
+                                                                  padding=self.padding,
+                                                                  dilation=self.dilation)
 
         embed = self.embed_conv(x).chunk(3, dim=1)
         q = embed[0].flatten(2).view(N, self.num_heads, self.hidden_channels, -1)
@@ -141,12 +147,6 @@ class _MultiheadNonlocalNd(nn.Module):
         v = embed[2].flatten(2).view(N, self.num_heads, self.hidden_channels, -1)
         qkv = self.attn(q, k, v).view(N, self.num_heads * self.hidden_channels, *hidden_dims)
 
-        self.output_conv.output_padding = _compute_output_padding(input_shape=hidden_dims,
-                                                                  output_shape=in_dims,
-                                                                  kernel_size=self.kernel_size,
-                                                                  stride=self.stride,
-                                                                  padding=self.padding,
-                                                                  dilation=self.dilation)
         out = self.output_conv(qkv)
         if self.residual:
             out = out + x
@@ -258,6 +258,12 @@ class _MutualMultiheadNonlocalNd(nn.Module):
                                                  stride=self.stride,
                                                  padding=self.padding,
                                                  dilation=self.dilation)
+        output_padding = _compute_output_padding(input_shape=hidden_dims,
+                                                 output_shape=in_dims,
+                                                 kernel_size=self.kernel_size,
+                                                 stride=self.stride,
+                                                 padding=self.padding,
+                                                 dilation=self.dilation)
 
         qs, ks, vs = [], [], []
         for stream_id in range(self.num_streams):
@@ -274,12 +280,7 @@ class _MutualMultiheadNonlocalNd(nn.Module):
             v = vs[stream_id]
             qkv = self.attn(q, k, v).view(N, self.num_heads * self.hidden_channels, *hidden_dims)
 
-            self.output_conv[stream_id].output_padding = _compute_output_padding(input_shape=hidden_dims,
-                                                                                 output_shape=in_dims,
-                                                                                 kernel_size=self.kernel_size,
-                                                                                 stride=self.stride,
-                                                                                 padding=self.padding,
-                                                                                 dilation=self.dilation)
+            self.output_conv[stream_id].output_padding = output_padding
             out = self.output_conv[stream_id](qkv)
             if self.residual:
                 out = out + xs[stream_id]

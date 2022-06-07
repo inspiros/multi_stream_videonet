@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from models import DEQBlock, DEQMutualMultiheadNonlocal2d, MutualMultiheadNonlocal2d
 from models.videos.multi_stream.fusion import FusionBlock
-from models.videos.multi_stream.parallel_module_list import ParallelModuleList
+from models.videos.multi_stream.parallel_modules import ParallelModuleList
 
 device = torch.device("cuda:0")
 

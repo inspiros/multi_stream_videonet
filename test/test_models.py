@@ -1,6 +1,6 @@
-from models.r2plus1d import r2plus1d_18
-from models.videos.c3d import c3d_bn
 import torch
+
+from models.videos.c3d import c3d_bn
 
 
 def main():
