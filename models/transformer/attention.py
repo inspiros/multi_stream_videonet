@@ -64,6 +64,8 @@ def _iterative_inv(mat, n_iter=6, method='inv_init_coeff_option'):
 
 
 def nystrom_attention(q, k, v,
+                      q_landmarks=None,
+                      k_landmarks=None,
                       scaled=True,
                       dim_last=True,
                       num_landmarks=None,
@@ -78,6 +80,8 @@ def nystrom_attention(q, k, v,
         q (Tensor): Querry tensor of shape [N, L, H, D].
         k (Tensor): Key tensor of shape [N, L, H, D].
         v (Tensor): Value tensor of shape [N, L, H, D].
+        q_landmarks (Tensor): Querry landmarks tensor of shape [N, L', H, D].
+        k_landmarks (Tensor): Key landmarks tensor of shape [N, L', H, D].
         scaled (bool): If `True`, use scaled dot product by D^{-0.5}. Default to `True`.
         dim_last (bool): If `False`, in put dimension is [N, H, D, L] instead. Default to `True`.
         num_landmarks (int): Number of landmarks. Default to None.
@@ -87,33 +91,34 @@ def nystrom_attention(q, k, v,
     """
     L_dim = -3 if dim_last else -1
     L = q.size(L_dim)
-    if p_landmark is None:
-        if num_landmarks is None:
-            num_landmarks = L
-        elif num_landmarks not in range(0, L + 1) or L % num_landmarks != 0:
-            raise ValueError('num_landmarks must be divisible by seq_len, got '
-                             f'seq_len={L} and num_landmarks={num_landmarks}.')
-    else:
-        if not 0 < p_landmark <= 1:
-            raise ValueError('p_landmark must be in range (0, 1],'
-                             f'got p_landmark={p_landmark}.')
-        num_landmarks = L * p_landmark
-        if num_landmarks % 1 != 0:
-            raise ValueError('p_landmark must be divisible by seq_len, got '
-                             f'seq_len={L} and p_landmarks={p_landmark}.')
-        num_landmarks = int(num_landmarks)
+    if q_landmarks is None or k_landmarks is None:
+        if p_landmark is None:
+            if num_landmarks is None:
+                num_landmarks = L
+            elif num_landmarks not in range(0, L + 1) or L % num_landmarks != 0:
+                raise ValueError('num_landmarks must be divisible by seq_len, got '
+                                 f'seq_len={L} and num_landmarks={num_landmarks}.')
+        else:
+            if not 0 < p_landmark <= 1:
+                raise ValueError('p_landmark must be in range (0, 1],'
+                                 f'got p_landmark={p_landmark}.')
+            num_landmarks = L * p_landmark
+            if num_landmarks % 1 != 0:
+                raise ValueError('p_landmark must be divisible by seq_len, got '
+                                 f'seq_len={L} and p_landmarks={p_landmark}.')
+            num_landmarks = int(num_landmarks)
 
-    if num_landmarks == L:
+    if num_landmarks == L and (q_landmarks is None or k_landmarks is None):
         # default softmax attention
         out = softmax_attention(q, k, v, scaled=scaled)
     else:
         if dim_last:
             N, _, H, D = q.size()
-            view_shape = (N, num_landmarks, L // num_landmarks, H, D)
+            grouped_shape = (N, num_landmarks, L // num_landmarks, H, D)
             attn_eq, out_eq = 'bmhd,bnhd->bhmn', 'bhmn,bnhd->bmhd'
         else:
             N, H, D, _ = q.size()
-            view_shape = (N, H, D, num_landmarks, L // num_landmarks)
+            grouped_shape = (N, H, D, num_landmarks, L // num_landmarks)
             attn_eq, out_eq = 'bhdm,bhdn->bhmn', 'bhmn,bhdn->bhdm'
 
         # nystrom approximation
@@ -122,8 +127,9 @@ def nystrom_attention(q, k, v,
             q = q * scale
             k = k * scale
 
-        q_landmarks = q.view(*view_shape).mean(dim=L_dim)
-        k_landmarks = k.view(*view_shape).mean(dim=L_dim)
+        if q_landmarks is None or k_landmarks is None:
+            q_landmarks = q.view(*grouped_shape).mean(dim=L_dim)
+            k_landmarks = k.view(*grouped_shape).mean(dim=L_dim)
 
         kernel_1 = torch.einsum(attn_eq, q, k_landmarks).softmax(dim=-1)
         kernel_2 = torch.einsum(attn_eq, q_landmarks, k_landmarks).softmax(dim=-1)
@@ -170,8 +176,10 @@ class NystromAttention(SoftmaxAttention):
         self.num_iters = num_iters
         self.method = method
 
-    def forward(self, q, k, v):
+    def forward(self, q, k, v, q_landmarks=None, k_landmarks=None):
         return nystrom_attention(q, k, v,
+                                 q_landmarks,
+                                 k_landmarks,
                                  scaled=self.scaled,
                                  dim_last=self.dim_last,
                                  num_landmarks=self.num_landmarks,

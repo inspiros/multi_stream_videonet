@@ -13,7 +13,7 @@ from datasets.general import MultiStreamVideoDataset
 from datasets.ipn import *
 from datasets.utils.mean_std_estimator import compute_mean_std
 from datasets.utils.video_sampler import *
-from models import multi_stream_r2plus1d_18
+from models.videos.multi_stream import multi_stream_r2plus1d_18
 from utils.plot_utils import *
 from utils.trainer_utils import ClassificationTrainer
 
